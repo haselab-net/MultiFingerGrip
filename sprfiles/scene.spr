@@ -1,0 +1,173 @@
+/* x file */
+Import{ path = "phPointerCube.x" }
+Import{ path = "table.x" }
+Import{ path = "jenga.x"}
+Import{ path = "iphone4.x"}
+Import{ path = "hammer_head.x"}
+Import{ path = "hammer_stick.x"}
+Import{ path = "aluminio.x"}
+
+
+/* POINTER MEASURMENTS */
+
+FWScene fwScene
+{
+	FWObject fwFloor{
+		*soCube			// PHSolid
+		*grMesh			// GRFrame
+	}
+	
+	FWObject fwPointer1{
+		*soPointer1		// PHSolid
+		*grMeshii	    // GRFrame
+	}
+	
+	FWObject fwPointer2{
+		*soPointer2		// PHSolid
+		*grMeshiii	    // GRFrame
+	}
+
+	FWObject fwJenga1{
+		*soJenga1		// PHSolid
+		*grJenga1	    // GRFrame
+	}
+	
+	FWObject fwPhone{
+		*soPhone		// PHSolid
+		*grPhone	    // GRFrame
+	}
+	
+	FWObject fwHammer{
+		*soHammer		// PHSolid
+		*grHammer	    // GRFrame
+	}
+	
+	FWObject fwAluminio{
+		*soAluminio		// PHSolid
+		*grAluminio	    // GRFrame
+	}
+	
+	/* PHScene */
+	PHScene phScene{
+		PHSolid soCube{
+			mass = 50.0
+			pose = 1 0 0 0 0.0 0.0 0.0
+			dynamical = false
+			//*table
+			PHFrame{
+				CDBox cdCube{
+				boxsize = 1.0 0.025 0.50 
+				}
+			}
+		}
+		
+		/* FAKE Pointer 1 */
+		PHSolid soPointer1{
+			mass = 10.0
+			pose = 1 0 0 0 -0.05 0.15 0.0
+			dynamical = true
+			//*phPointer
+			//*phPointerCube
+			//*phCubeMass
+			PHFrame{
+				CDBox cdPointer1{
+				boxsize = 0.012 0.012 0.012 
+				}
+			}
+		}
+		
+		/* FAKE Pointer 2 */
+		PHSolid soPointer2{
+			mass = 10.0
+			pose = 1 0 0 0 0.05 0.15 0.0
+			dynamical = true
+			//*phPointer
+			//*phPointerCube
+			//*phCubeMass
+			PHFrame{
+				CDBox cdPointer2{
+				boxsize = 0.012 0.012 0.012 
+				}
+			}
+		}
+		
+		PHSolid soJenga1{		
+			mass = 10.0
+			pose = 0.707107 0 0.707107 0 -0.121 0.020 0.1
+			dynamical = true
+			PHFrame{
+				CDBox cdJenga1{
+				boxsize = 0.070 0.020 0.020 
+				}
+			}
+		}
+		
+		PHSolid soPhone{		
+			mass = 1.0
+			pose = 0.70709 -0.00178529 0.70712 0.001727 0.0 0.039 0.10
+			dynamical = true
+			PHFrame{
+				CDBox cdPhone{
+				boxsize = 0.115 0.0586 0.015
+				}
+			}
+		}
+		
+		PHSolid soHammer{		
+			mass = 1.0
+			pose = 1 0 0 0 0.1 0.0327 0.10
+			dynamical = true
+			PHFrame{ 
+				CDBox cdHammerStick{
+				boxsize = 0.020 0.020 0.15 
+				}
+			}
+			PHFrame{ 
+				pose = 1 0 0 0 0.0 0.0 -0.065
+				CDBox cdHammerHead{
+				boxsize = 0.02793 0.0621 0.02883
+				}
+			}
+		}
+		
+		PHSolid soAluminio{		
+			mass = 10.0
+			pose = 0.707107 0 0.707107 0 0.0 0.0305 -0.1
+			dynamical = true
+			PHFrame{
+				CDBox cdAluminio{
+				boxsize = 0.040 0.040 0.040 
+				}
+			}
+		}
+	}
+
+	/* GRScene */
+	GRScene grScene{
+		GRFrame grMesh { 
+			*table
+		}
+				
+		GRFrame grMeshii { *phPointerCube }
+		GRFrame grMeshiii { *phPointerCube }
+		GRFrame grJenga1 { *phjenga }
+		GRFrame grPhone { *iphone4 }
+		GRFrame grHammer { 
+			*hammerStick
+			*hammerHead
+		}
+		GRFrame grAluminio { *phaluminio }
+
+		GRLight light1 {					
+			ambient = 0.1 0.1 .1 0.1		
+			diffuse = 0.2 0.2 0.2 0.2			
+			specular = 1.0 1.0 1.0 0.0			
+			position = 0.2 0.2 0.2 0.0			
+		}
+
+	}
+}
+
+
+
+
