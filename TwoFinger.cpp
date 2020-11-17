@@ -153,6 +153,7 @@ void TwoFinger::BuildScene(){
 void TwoFinger::InitHapticInterface(){
 	HISdkIf* hiSdk = GetSdk()->GetHISdk();
 
+	bool bFoundCy = false;
 	if (humanInterface == SPIDAR){
 		//// x86
 		//DRUsb20SimpleDesc usbSimpleDesc;
@@ -166,7 +167,13 @@ void TwoFinger::InitHapticInterface(){
 		DRCyUsb20Sh4Desc cyDesc;
 		for (int i = 0; i<10; ++i){
 			cyDesc.channel = i;
-			hiSdk->AddRealDevice(DRCyUsb20Sh4If::GetIfInfoStatic(), &cyDesc);
+			DRCyUsb20Sh4If* cy = hiSdk->AddRealDevice(DRCyUsb20Sh4If::GetIfInfoStatic(), &cyDesc)->Cast();
+			if (cy && cy->NChildObject()) {
+				bFoundCy = true;
+			}
+			else {
+				hiSdk->DelChildObject(cy);
+			}
 		}
 		DRUARTMotorDriverDesc uartDesc;
 		hiSdk->AddRealDevice(DRUARTMotorDriverIf::GetIfInfoStatic(), &uartDesc);
@@ -175,8 +182,12 @@ void TwoFinger::InitHapticInterface(){
 		hiSdk->Print(std::cout);
 
 		spg = hiSdk->CreateHumanInterface(HISpidarGIf::GetIfInfoStatic())->Cast();
-		spg->Init(&HISpidarGDesc("SpidarG6X3R")); //Original SPIDARG6
-		//spg->Init(&HISpidarGDesc("SpidarG6T1"));	//	low price T SPIDAR
+		if (bFoundCy) {
+			spg->Init(&HISpidarGDesc("SpidarG6X3R")); //Original SPIDARG6
+		}
+		else {
+			spg->Init(&HISpidarGDesc("SpidarG6T1"));	//	low price T SPIDAR
+		}
 		spg->Calibration();
 		spidar = spg->Cast();
 	}
@@ -189,6 +200,9 @@ void TwoFinger::InitHapticInterface(){
 	}
 	//The port is 3 because the sensor is connected to the port 3 on the Spidar's AD Converter
 	flexiforce = hiSdk->RentVirtualDevice(DVAdIf::GetIfInfoStatic(), "", 3)->Cast();
+	if (flexiforce && 1700 < flexiforce->Digit() && flexiforce->Digit() < 1900) {
+		flexiforce = NULL;
+	}
 }
 
 void TwoFinger::InitCameraView(){
