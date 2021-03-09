@@ -20,7 +20,6 @@
 #include <Framework\SprFWApp.h>
 #include <HumanInterface\SprHIDRUsb.h>
 
-#include <windows.h>  //This library should be at the bottom
 #include <iomanip>
 
 

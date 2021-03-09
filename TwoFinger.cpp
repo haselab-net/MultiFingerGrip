@@ -1,4 +1,5 @@
 #include "TwoFinger.h"
+#include <windows.h>
 
 //Constructor 
 TwoFinger::TwoFinger(){
@@ -285,21 +286,19 @@ void TwoFinger::TwoFingerStep(Vec3f *spidarForce, Vec3f *spidarTorque)
 
 	double distance = (pos1 - pos2).norm();
 	//grabForce = maxReach * 2.5;
-
-	if (distance >= maxReach * 2) {
-		grabforce1 = -radius1.unit() * fPointer1->GetForce().norm();
-		grabforce2 = -radius2.unit() * fPointer2->GetForce().norm();
-	} 
-	else if (grabForce <= 0.2)  {   //0.03  original Virgilio value
+	if (grabForce <= 0.2) {   //0.03  original Virgilio value
+		if (distance < maxReach * 2) {	//	
 		//used to separate the pointers, once they had been in contact
-		grabforce1 = radius1.unit() * 0.1;
-		grabforce2 = radius2.unit() * 0.1;
+			grabforce1 = radius1.unit() * 0.1;
+			grabforce2 = radius2.unit() * 0.1;
+		}
 	}
 	else {
-		//If the force is bellow the threshold value, then apply the force into the haptic pointers
+	//If the force is bellow the threshold value, then apply the force into the haptic pointers
 		grabforce1 = -radius1.unit() * grabForce;
 		grabforce2 = -radius2.unit() * grabForce;
 	}
+
 	//update the haptic pointers
 	fPointer1->AddForce(grabforce1);  
 	fPointer2->AddForce(grabforce2);
