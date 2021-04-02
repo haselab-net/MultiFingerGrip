@@ -187,7 +187,7 @@ void TwoFinger::InitHapticInterface(){
 			spg->Init(&HISpidarGDesc("SpidarG6X3R")); //Original SPIDARG6
 		}
 		else {
-			spg->Init(&HISpidarGDesc("SpidarG6T1"));	//	low price T SPIDAR
+			spg->Init(&HISpidarGDesc("SpidarG6X4R"));	//	low price X SPIDAR
 		}
 		spg->Calibration();
 		spidar = spg->Cast();
