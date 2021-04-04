@@ -219,7 +219,8 @@ void TwoFinger::InitCameraView(){
 
 void TwoFinger::TwoFingerStep(Vec3f *spidarForce, Vec3f *spidarTorque)
 {
-	double linSpring = 200;//1500;
+	double linSpring = (_stricmp(spidar->GetSpidarType(), "SpidarG6X4R") == 0 || _stricmp(spidar->GetSpidarType(), "SpidarG6X4L") == 0)
+		? 100: 200;//1500;
 	double linDamper = 2;//5;     //3 my value
 	double rotSpring = 0.01;//10;      //torsional spring   original value 0.001
 	double rotDamper = 0.1*0.001; // 0.1*rotSpring;   //torsional damper  orignal values 0.1*rotSpring
