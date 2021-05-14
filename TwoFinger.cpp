@@ -185,9 +185,11 @@ void TwoFinger::InitHapticInterface(){
 		spg = hiSdk->CreateHumanInterface(HISpidarGIf::GetIfInfoStatic())->Cast();
 		if (bFoundCy) {
 			spg->Init(&HISpidarGDesc("SpidarG6X3R")); //Original SPIDARG6
+			std::cout << "Init SpidarG6X3R" << std::endl;
 		}
 		else {
 			spg->Init(&HISpidarGDesc("SpidarG6X4R"));	//	low price X SPIDAR
+			std::cout << "Init SpidarG6X4R" << std::endl;
 		}
 		spg->Calibration();
 		spidar = spg->Cast();
@@ -220,7 +222,7 @@ void TwoFinger::InitCameraView(){
 void TwoFinger::TwoFingerStep(Vec3f *spidarForce, Vec3f *spidarTorque)
 {
 	double linSpring = (_stricmp(spidar->GetSpidarType(), "SpidarG6X4R") == 0 || _stricmp(spidar->GetSpidarType(), "SpidarG6X4L") == 0)
-		? 100: 200;//1500;
+		? 50: 100;//1500;
 	double linDamper = 2;//5;     //3 my value
 	double rotSpring = 0.01;//10;      //torsional spring   original value 0.001
 	double rotDamper = 0.1*0.001; // 0.1*rotSpring;   //torsional damper  orignal values 0.1*rotSpring
