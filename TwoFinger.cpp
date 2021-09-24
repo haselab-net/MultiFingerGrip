@@ -190,6 +190,7 @@ void TwoFinger::InitHapticInterface(){
 		else {
 			spg->Init(&HISpidarGDesc("SpidarG6X4R"));	//	low price X SPIDAR
 			std::cout << "Init SpidarG6X4R" << std::endl;
+			DSTR << "Init SpidarG6X4R" << std::endl;
 		}
 		spg->Calibration();
 		spidar = spg->Cast();
@@ -202,7 +203,12 @@ void TwoFinger::InitHapticInterface(){
 		spg->Init(NULL);
 	}
 	//The port is 3 because the sensor is connected to the port 3 on the Spidar's AD Converter
-	flexiforce = hiSdk->RentVirtualDevice(DVAdIf::GetIfInfoStatic(), "", 3)->Cast();
+	if (bFoundCy) {
+		flexiforce = hiSdk->RentVirtualDevice(DVAdIf::GetIfInfoStatic(), "", 3)->Cast();
+	}
+	else {
+		flexiforce = hiSdk->RentVirtualDevice(DVAdIf::GetIfInfoStatic(), "", 2)->Cast();
+	}
 	if (flexiforce && 1700 < flexiforce->Digit() && flexiforce->Digit() < 1900) {
 		flexiforce = NULL;
 	}
@@ -210,9 +216,13 @@ void TwoFinger::InitHapticInterface(){
 
 void TwoFinger::InitCameraView(){
 
-	Vec3d pos = Vec3d(-0.2518, 0.343908, 0.406151);
+	Vec3d pos = Vec3d(0, -0.4, -0.5);
 	GetCurrentWin()->GetTrackball()->SetPosition(pos);
-	Vec4d ori = Vec4d(0.95676, -0.209797, -0.196808, -0.0431558);
+	Affinef af;
+	af.Pos() = pos;
+	af.LookAt(Vec3d(0, 0, 0), Vec3d(0, 1, 0));
+	Quaterniond ori;
+	ori.FromMatrix(af.Rot());
 	GetCurrentWin()->GetTrackball()->SetOrientation(ori);
 
 	Vec3d target = Vec3d(0.0, 0.05, -0.1);	 //focused on the tochdown zone
@@ -223,7 +233,7 @@ void TwoFinger::TwoFingerStep(Vec3f *spidarForce, Vec3f *spidarTorque)
 {
 	double linSpring = (_stricmp(spidar->GetSpidarType(), "SpidarG6X4R") == 0 || _stricmp(spidar->GetSpidarType(), "SpidarG6X4L") == 0)
 		? 50: 100;//1500;
-	double linDamper = 2;//5;     //3 my value
+	double linDamper = 3;//5;     //3 my value
 	double rotSpring = 0.01;//10;      //torsional spring   original value 0.001
 	double rotDamper = 0.1*0.001; // 0.1*rotSpring;   //torsional damper  orignal values 0.1*rotSpring
 
@@ -253,7 +263,7 @@ void TwoFinger::TwoFingerStep(Vec3f *spidarForce, Vec3f *spidarTorque)
 	Vec3d spidarVel1 = spidarVel + (spidarAngVel % spidarRadius1); // spidar angular vel. cross product to pointer distance to the center, plus pointer velocity
 	Vec3d spidarVel2 = spidarVel + (spidarAngVel % spidarRadius2); // (Cross Multiplication (TO GET NORMAL VECTOR)) 
 
-	Quaterniond rotationDelta1 = fPointer1->GetOrientation() * spidarPose1.Ori().Inv();  //Mix orientation of the spidar pointer and the solids
+	Quaterniond rotationDelta1 = fPointer1->GetOrientation() * spidarPose1.Ori().Inv(); //Mix orientation of the spidar pointer and the solids
 	Quaterniond rotationDelta2 = fPointer2->GetOrientation() * spidarPose2.Ori().Inv();
 	Vec3d rotAngle1 = rotationDelta1.Rotation();  //gets the rotation vector
 	Vec3d rotAngle2 = rotationDelta2.Rotation();
@@ -275,9 +285,14 @@ void TwoFinger::TwoFingerStep(Vec3f *spidarForce, Vec3f *spidarTorque)
 	fPointer2->AddTorque(couplingTorque2);  
 
 	//This if is always true
+	static int c = 0;
+	c++;
 	if (flexiforce) {
 		// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
 		float volts = flexiforce->Voltage();
+		if (c % 100 == 0) {
+			DSTR << "force: " << volts << std::endl;
+		}
 		grabForce = (volts*-2.4914 + 4.4105);
 	}
 	else {
