@@ -13,7 +13,7 @@ struct FingerDesc {
 	double maxLength = 1;
 	PHSolidIf* tool=NULL;			//	Tool's solid (should have shape)
 	PHSolidIf* device = NULL;		//	Device's solid (should not have shape or should be no collision)
-	PHSpringIf* coupling = NULL;	//	coupling between tool and device
+	PHSliderJointIf* slider = NULL;	//	slider joint from the device to the tool.
 };
 
 class Finger: public FingerDesc {

@@ -32,6 +32,24 @@ void FingerGrip::Step(Posed p, double dt) {
 
 void Finger::Build(FWSceneIf* fwScene) {
 	PHSceneIf* phScene = fwScene->GetPHScene();
-	tool = phScene->FindObject("soTool")->Cast();
+	ostringstream toolName;
+	toolName << "soTool" << index;
+	tool = phScene->FindObject(toolName.str().c_str())->Cast();
+	if (!tool) {
+		tool = fwScene->GetPHScene()->CreateSolid();
+	}
+	
+	ostringstream deviceName;
+	deviceName << "soDevice" << index;
+	device = phScene->FindObject(deviceName.str().c_str())->Cast();
+	if (!device) {
+		device = fwScene->GetPHScene()->CreateSolid();
+	}
+	device->SetDynamical(false);
 
+	PHSliderJointDesc sjDesc;
+	sjDesc.poseSocket.Ori().RotationArc(Vec3d(0, 0, 1), direction);
+	sjDesc.poseSocket.Pos() = position;	
+	slider = phScene->CreateJoint(device, tool, sjDesc)->Cast();
+	slider->SetTargetPosition(length);
 }
