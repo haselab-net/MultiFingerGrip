@@ -7,6 +7,9 @@
  */
 
 #include "MultiFinger.h"
+#include <conio.h>
+
+
 #pragma hdrstop		// プリコンパイル済ヘッダを利用する場合に必要
 MultiFinger app;
 

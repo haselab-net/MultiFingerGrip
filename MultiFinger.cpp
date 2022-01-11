@@ -1,5 +1,7 @@
 #include "MultiFinger.h"
 #include <windows.h>
+#include <conio.h>
+
 
 //Constructor 
 MultiFinger::MultiFinger(){
@@ -169,7 +171,7 @@ void MultiFinger::InitHapticInterface(){
 		spidar = hiSdk->CreateHumanInterface(HINovintFalconIf::GetIfInfoStatic())->Cast();
 		spidar->Init(NULL);
 	}
-	//The port is 3 because the sensor is connected to the port 3 on the Spidar's AD Converter
+	/*//The port is 3 because the sensor is connected to the port 3 on the Spidar's AD Converter
 	if (bFoundCy) {
 		flexiforce = hiSdk->RentVirtualDevice(DVAdIf::GetIfInfoStatic(), "", 3)->Cast();
 	}
@@ -178,7 +180,7 @@ void MultiFinger::InitHapticInterface(){
 	}
 	if (flexiforce && 1700 < flexiforce->Digit() && flexiforce->Digit() < 1900) {
 		flexiforce = NULL;
-	}
+	}*/
 }
 
 void MultiFinger::InitCameraView(){
@@ -198,7 +200,8 @@ void MultiFinger::InitCameraView(){
 
 void MultiFinger::MultiFingerStep()
 {
-	
+	// Need to write a code here rfor controlling the fingers.
+
 }
 
 //Calibrates the position of the grip and both pointers
