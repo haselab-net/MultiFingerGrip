@@ -1,13 +1,12 @@
-#include "TwoFinger.h"
+#include "MultiFinger.h"
 #include <windows.h>
 
 //Constructor 
-TwoFinger::TwoFinger(){
+MultiFinger::MultiFinger(){
 
 	humanInterface = SPIDAR;
 	fileName = "./sprfiles/scene.spr";
 	pdt = 0.001f;
-	srand((unsigned)time(NULL));
 	posScale = 10.0;  //2.5 orignal value with 20x30 floor scene (Virgilio original) (for peta pointer)  10.0 
 
 	//Inits the debug CSV file
@@ -17,7 +16,7 @@ TwoFinger::TwoFinger(){
 }
 
 //main function of the class
-void TwoFinger::Init(int argc, char* argv[]){
+void MultiFinger::Init(int argc, char* argv[]){
 	FWApp::Init(argc, argv);
 
 	InitCameraView();
@@ -34,13 +33,11 @@ void TwoFinger::Init(int argc, char* argv[]){
 	ptimer->SetInterval(1);
 	ptimer->Start();
 
-	//petaGrab = new GrabPointer(phscene, fPointer1);
 	count = 0;
 	delay = 0;
-
 }
 //This function loads the spr file and inits the scene
-void TwoFinger::BuildScene(){
+void MultiFinger::BuildScene(){
 	
 	int i = 0;
 	UTRef<ImportIf> import = GetSdk()->GetFISdk()->CreateImport();	/// インポートポイントの作成
@@ -151,19 +148,11 @@ void TwoFinger::BuildScene(){
 }
 
 //Inits SPIDAR and calibrates the pointer position
-void TwoFinger::InitHapticInterface(){
+void MultiFinger::InitHapticInterface(){
 	HISdkIf* hiSdk = GetSdk()->GetHISdk();
 
 	bool bFoundCy = false;
 	if (humanInterface == SPIDAR){
-		//// x86
-		//DRUsb20SimpleDesc usbSimpleDesc;
-		//hiSdk->AddRealDevice(DRUsb20SimpleIf::GetIfInfoStatic(), &usbSimpleDesc);
-		//DRUsb20Sh4Desc usb20Sh4Desc;
-		//for(int i=0; i< 10; ++i){
-		//	usb20Sh4Desc.channel = i;
-		//	hiSdk->AddRealDevice(DRUsb20Sh4If::GetIfInfoStatic(), &usb20Sh4Desc);
-		//}
 		// x64
 		DRCyUsb20Sh4Desc cyDesc;
 		for (int i = 0; i<10; ++i){
@@ -182,25 +171,25 @@ void TwoFinger::InitHapticInterface(){
 		hiSdk->Print(DSTR);
 		hiSdk->Print(std::cout);
 
-		spg = hiSdk->CreateHumanInterface(HISpidarGIf::GetIfInfoStatic())->Cast();
+		spidar = hiSdk->CreateHumanInterface(HISpidarGIf::GetIfInfoStatic())->Cast();
 		if (bFoundCy) {
-			spg->Init(&HISpidarGDesc("SpidarG6X3R")); //Original SPIDARG6
+			spidar->Init(&HISpidarGDesc("SpidarG6X3R")); //Original SPIDARG6
 			std::cout << "Init SpidarG6X3R" << std::endl;
 		}
 		else {
-			spg->Init(&HISpidarGDesc("SpidarG6X4R"));	//	low price X SPIDAR
+			spidar->Init(&HISpidarGDesc("SpidarG6X4R"));	//	low price X SPIDAR
 			std::cout << "Init SpidarG6X4R" << std::endl;
 			DSTR << "Init SpidarG6X4R" << std::endl;
 		}
-		spg->Calibration();
-		spidar = spg->Cast();
+		spidar->Calibration();
+		spidar = spidar->Cast();
 	}
 	else if (humanInterface == XBOX){
-		spg = hiSdk->CreateHumanInterface(HIXbox360ControllerIf::GetIfInfoStatic())->Cast();
+		spidar = hiSdk->CreateHumanInterface(HIXbox360ControllerIf::GetIfInfoStatic())->Cast();
 	}
 	else if (humanInterface == FALCON){
-		spg = hiSdk->CreateHumanInterface(HINovintFalconIf::GetIfInfoStatic())->Cast();
-		spg->Init(NULL);
+		spidar = hiSdk->CreateHumanInterface(HINovintFalconIf::GetIfInfoStatic())->Cast();
+		spidar->Init(NULL);
 	}
 	//The port is 3 because the sensor is connected to the port 3 on the Spidar's AD Converter
 	if (bFoundCy) {
@@ -214,7 +203,7 @@ void TwoFinger::InitHapticInterface(){
 	}
 }
 
-void TwoFinger::InitCameraView(){
+void MultiFinger::InitCameraView(){
 
 	Vec3d pos = Vec3d(0, -0.4, -0.5);
 	GetCurrentWin()->GetTrackball()->SetPosition(pos);
@@ -229,153 +218,13 @@ void TwoFinger::InitCameraView(){
 	GetCurrentWin()->GetTrackball()->SetTarget(target);	// カメラ初期位置の設定
 }
 
-void TwoFinger::TwoFingerStep(Vec3f *spidarForce, Vec3f *spidarTorque)
+void MultiFinger::MultiFingerStep()
 {
-	double linSpring = (_stricmp(spidar->GetSpidarType(), "SpidarG6X4R") == 0 || _stricmp(spidar->GetSpidarType(), "SpidarG6X4L") == 0)
-		? 50: 100;//1500;
-	double linDamper = 3;//5;     //3 my value
-	double rotSpring = 0.01;//10;      //torsional spring   original value 0.001
-	double rotDamper = 0.1*0.001; // 0.1*rotSpring;   //torsional damper  orignal values 0.1*rotSpring
-
-	Vec3d pos1 = fPointer1->GetPose().Pos();
-	Vec3d pos2 = fPointer2->GetPose().Pos();
-	Vec3d vel1 = fPointer1->GetVelocity();
-	Vec3d vel2 = fPointer2->GetVelocity();
-
-	Vec3d centerPos = Vec3d((pos1.X() + pos2.X()) / 2, (pos1.Y() + pos2.Y()) / 2, (pos1.Z() + pos2.Z()) / 2);  //middle point between the solids
-	Vec3d radius1 = pos1 - centerPos;
-	Vec3d radius2 = pos2 - centerPos;  //distance from the middle point to the pointer
-	Quaterniond spidarRot = spidar->GetOrientation();
-	Vec3d unitVectorX = (spidarRot * Vec3d(1, 0, 0)).unit();  //gets a X axis component of the spidar orientation
-	Posed localSpidarPose1 = Posed(1, 0, 0, 0, radius1 * unitVectorX, 0, 0);   //gets the local orientation on X axis and match it with spidar orientation
-	Posed localSpidarPose2 = Posed(1, 0, 0, 0, radius2 * unitVectorX, 0, 0);
-	Posed spidarPose = spidar->GetPose();
-	spidarPose.Pos() *= posScale;   //scales the spidar device position
-	Posed spidarPose1 = spidarPose * localSpidarPose1;  //locate pointers accordingly to spidar position, on the local orientation axis
-	Posed spidarPose2 = spidarPose * localSpidarPose2;
-	Vec3d spidarRadius1 = spidarPose1.Pos() - spidarPose.Pos();   //global distance between the pointers and the spidarposition (after scale)
-	Vec3d spidarRadius2 = spidarPose2.Pos() - spidarPose.Pos();
-
-	Vec3d spidarVel = spidar->GetVelocity();
-	Vec3d spidarAngVel = spidar->GetAngularVelocity();
-
-	//gets the pointer velocity
-	Vec3d spidarVel1 = spidarVel + (spidarAngVel % spidarRadius1); // spidar angular vel. cross product to pointer distance to the center, plus pointer velocity
-	Vec3d spidarVel2 = spidarVel + (spidarAngVel % spidarRadius2); // (Cross Multiplication (TO GET NORMAL VECTOR)) 
-
-	Quaterniond rotationDelta1 = fPointer1->GetOrientation() * spidarPose1.Ori().Inv(); //Mix orientation of the spidar pointer and the solids
-	Quaterniond rotationDelta2 = fPointer2->GetOrientation() * spidarPose2.Ori().Inv();
-	Vec3d rotAngle1 = rotationDelta1.Rotation();  //gets the rotation vector
-	Vec3d rotAngle2 = rotationDelta2.Rotation();
-
-	//Gets the lineal coupling force 
-	Vec3d couplingForce1 = (-linSpring * ((pos1 - defaultCenterPose.Pos()) - spidarPose1.Pos()) - linDamper * (vel1 - spidarVel1));
-	Vec3d couplingForce2 = (-linSpring * ((pos2 - defaultCenterPose.Pos()) - spidarPose2.Pos()) - linDamper * (vel2 - spidarVel2));
-
-	//the rotational coupling torque 
-	Vec3d couplingTorque1 = -rotSpring * rotAngle1 - rotDamper * (fPointer1->GetAngularVelocity() - spidarAngVel);
-	Vec3d couplingTorque2 = -rotSpring * rotAngle2 - rotDamper * (fPointer2->GetAngularVelocity() - spidarAngVel);
-
-	Vec3f spidarTorque1 = couplingTorque1 + couplingForce1 % spidarRadius1;
-	Vec3f spidarTorque2 = couplingTorque2 + couplingForce2 % spidarRadius2;
-
-	fPointer1->AddForce(couplingForce1);
-	fPointer2->AddForce(couplingForce2);
-	fPointer1->AddTorque(couplingTorque1);  
-	fPointer2->AddTorque(couplingTorque2);  
-
-	//This if is always true
-	static int c = 0;
-	c++;
-	if (flexiforce) {
-		// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
-		float volts = flexiforce->Voltage();
-		if (c % 100 == 0) {
-			DSTR << "force: " << volts << std::endl;
-		}
-		grabForce = (volts*-2.4914 + 4.4105);
-	}
-	else {
-		grabForce = (grabKey - '1') * 0.2;
-	}
-
-	Vec3d grabforce1;
-	Vec3d grabforce2;
-
-	double distance = (pos1 - pos2).norm();
-	//grabForce = maxReach * 2.5;
-	if (grabForce <= 0.2) {   //0.03  original Virgilio value
-		if (distance < maxReach * 2) {	//	
-		//used to separate the pointers, once they had been in contact
-			grabforce1 = radius1.unit() * 0.1;
-			grabforce2 = radius2.unit() * 0.1;
-		}
-	}
-	else {
-	//If the force is bellow the threshold value, then apply the force into the haptic pointers
-		grabforce1 = -radius1.unit() * grabForce;
-		grabforce2 = -radius2.unit() * grabForce;
-	}
-
-	//update the haptic pointers
-	fPointer1->AddForce(grabforce1);  
-	fPointer2->AddForce(grabforce2);
-
-	//buffer used to draw the force sensor force into de screen
-	if (delay == 50) {
-		if (count < VIBBUF_LEN) {
-			vibBuffer[count] = grabForce;//振動の変位(表示用)
-			count++;
-		}
-		else {
-			vibBuffer[count] = grabForce;//振動の変位(表示用)
-			count = 0;
-		}
-		delay = 0;
-	}
-	else  { delay++; }
-
-
-	//This block displays the calculated force and torque in SPIDAR
-	//The ifs avoid displaying to much force on the haptic grip
-	float maxForce = 4.0f;
-	float maxTorque = 4.0f;
-	*spidarForce = couplingForce1 + couplingForce2;
-	*spidarTorque = spidarTorque1 + spidarTorque2;
-	if (spidarForce->X() < 0)
-		spidarForce->X() = max(spidarForce->X(), -maxForce);
-	else
-		spidarForce->X() = min(spidarForce->X(), maxForce);
-
-	if (spidarForce->Y() < 0)
-		spidarForce->Y() = max(spidarForce->Y(), -maxForce);
-	else
-		spidarForce->Y() = min(spidarForce->Y(), maxForce);
-
-	if (spidarForce->Z() < 0)
-		spidarForce->Z() = max(spidarForce->Z(), -maxForce);
-	else
-		spidarForce->Z() = min(spidarForce->Z(), maxForce);
-
-	if (spidarTorque->X() < 0)
-		spidarTorque->X() = max(spidarTorque->X(), -maxTorque);
-	else
-		spidarTorque->X() = min(spidarTorque->X(), maxTorque);
-
-	if (spidarTorque->Y() < 0)
-		spidarTorque->Y() = max(spidarTorque->Y(), -maxTorque);
-	else
-		spidarTorque->Y() = min(spidarTorque->Y(), maxTorque);
-
-	if (spidarTorque->Z() < 0)
-		spidarTorque->Z() = max(spidarTorque->Z(), -maxTorque);
-	else
-		spidarTorque->Z() = min(spidarTorque->Z(), maxTorque);
 	
 }
 
 //Calibrates the position of the grip and both pointers
-void TwoFinger::calibrate() {
+void MultiFinger::calibrate() {
 	
 	fPointer1->SetFramePosition(defaultPose1.Pos());
 	fPointer1->SetOrientation(spidar->GetOrientation());
@@ -388,11 +237,11 @@ void TwoFinger::calibrate() {
 	fPointer2->SetAngularVelocity(Vec3d(0.0, 0.0, 0.0));
 	fPointer2->SetDynamical(true);
 
-	spg->Calibration();
+	spidar->Calibration();
 }
 
 //This multimedia thread handles the haptic (6DOF virtual coupling pointers) and physics simulation (Springhead)
-void TwoFinger::TimerFunc(int id){
+void MultiFinger::TimerFunc(int id){
 
 	//DSTR << "timers id: " << pTimerID << std::endl;
 	if (pTimerID == id){
@@ -411,14 +260,10 @@ void TwoFinger::TimerFunc(int id){
 			cycle++;
 			}
 
-		Vec3f spidarForce;
-		Vec3f spidarTorque;
-
 		phscene->Step();  //springhead physics step
 		spidar->Update(pdt);  //updates the forces displayed in SPIDAR
 
-		TwoFingerStep(&spidarForce, &spidarTorque);  //This function computes the lineal and rotational couplings value
-		spidar->SetForce(-spidarForce, -spidarTorque);  //This function set the force 
+		MultiFingerStep();  //This function computes the lineal and rotational couplings value
 
 		PostRedisplay();
 	}
@@ -428,7 +273,7 @@ void TwoFinger::TimerFunc(int id){
 }
 
 //catches keyboard events
-void TwoFinger::Keyboard(int key, int x, int y){
+void MultiFinger::Keyboard(int key, int x, int y){
 	if (ptimer){
 		while (!ptimer->Stop());
 	}
@@ -511,7 +356,7 @@ void TwoFinger::Keyboard(int key, int x, int y){
 }
 
 //draws the force graphic on the right of the screen
-void TwoFinger::displayGraph(GRRenderIf* render)
+void MultiFinger::displayGraph(GRRenderIf* render)
 {
 	Affinef view; render->GetViewMatrix(view);
 	Affinef proj; render->GetProjectionMatrix(proj);
@@ -541,7 +386,7 @@ void TwoFinger::displayGraph(GRRenderIf* render)
 }
 
 //Used to graphically debug the program
-void TwoFinger::Display() 
+void MultiFinger::Display() 
 {
 	GRRenderIf* render = GetSdk()->GetRender();
 
@@ -553,13 +398,13 @@ void TwoFinger::Display()
 }
 
 
-void TwoFinger::AtExit(){
+void MultiFinger::AtExit(){
 	//this->myfile.flush();
 	//this->myfile.close();  //close the DEBUG csv file at exit
 }
 
 // Initialize the position of the objects in the scene
-void TwoFinger::resetObjects(){
+void MultiFinger::resetObjects(){
 
 	int randAngle;
 	randAngle = rand() % (360 + 1);

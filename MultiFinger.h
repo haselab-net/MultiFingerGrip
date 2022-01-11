@@ -1,5 +1,5 @@
-#ifndef TWO_FINGER_H
-#define TWO_FINGER_H
+#ifndef MULTI_FINGER_H
+#define MULTI_FINGER_H
 
 //FLEXI FORCE CALIBRATION PARAMETERS
 #define SATURATION_VOLTAGE 0.624
@@ -22,12 +22,12 @@
 
 #include <iomanip>
 
-
+#include "FingerGrip.h"
 
 using namespace Spr;
 using namespace std;
 
-class TwoFinger : public FWApp{
+class MultiFinger : public FWApp{
 public: //Local Properties
 	enum HumanInterface{
 		SPIDAR,
@@ -35,7 +35,7 @@ public: //Local Properties
 		FALCON,
 	} humanInterface;
 	
-	HIBaseIf* spg;
+	FingerGrip grip;
 	HISpidarGIf* spidar;
 	PHSceneIf* phscene;
 	FWSceneIf* fwscene;
@@ -52,7 +52,8 @@ public: //Local Properties
 	double posScale;  //2.5 orignal value with 20x30 floor scene (Virgilio original)
 	int grabKey;	//	'1' to '9'
 
-	TwoFinger();
+
+	MultiFinger();
 	void InitHapticInterface();
 	void Init(int argc, char* argv[]);
 	void BuildScene();
@@ -61,7 +62,7 @@ public: //Local Properties
 	virtual void Keyboard(int key, int x, int y);
 	virtual void Display(); //virtual fucntion used to display graphics
 	virtual void AtExit();  //used to close the debug file
-	void TwoFingerStep(Vec3f *spidarForce, Vec3f *spidarTorque);  //encapsulates the twofinger calculations, returns the force to be displayed in Spidar
+	void MultiFingerStep();  //encapsulates the MultiFinger calculations, returns the force to be displayed in Spidar
 
 	//phsolid objects assigned during buildscene()
 	PHSolidIf* fPointer1;

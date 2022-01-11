@@ -6,9 +6,9 @@
  *  This license itself, Boost Software License, The MIT License, The BSD License.   
  */
 
-#include "TwoFinger.h"
+#include "MultiFinger.h"
 #pragma hdrstop		// プリコンパイル済ヘッダを利用する場合に必要
-TwoFinger app;
+MultiFinger app;
 
 int __cdecl main(int argc, char *argv[]){
 
