@@ -5,6 +5,7 @@ void Finger::AddForce(double f) {
 }
 void Finger::Step(double dt) {
 	length += force * dt / mass;
+	LimitLength();
 }
 
 void FingerGrip::Step(Posed p, double dt) {

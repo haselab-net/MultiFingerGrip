@@ -65,21 +65,12 @@ public: //Local Properties
 	void MultiFingerStep();  //encapsulates the MultiFinger calculations, returns the force to be displayed in Spidar
 
 	//phsolid objects assigned during buildscene()
-	PHSolidIf* fPointer1;
-	PHSolidIf* fPointer2;
 	PHSolidIf *fPhone;
 	PHSolidIf *fHammer;
 	PHSolidIf *fJenga1;
 	//PHSolidIf *fJenga2;
 	//PHSolidIf *fJenga3;
 	PHSolidIf *fAluminio;
-
-	//Used for the two finger manipulation method
-	Posed defaultCenterPose;
-	Posed defaultPose1;
-	Posed defaultPose2;
-	double maxReach;
-	double grabForce;
 
 	double vibBuffer[1000];
 	int count;  //used to fill the buffer of the force graph
@@ -88,8 +79,6 @@ public: //Local Properties
 	void calibrate(); //calibrates SPIDAR and orientates the pointers
 	void displayGraph(GRRenderIf* render);  //draws the force graphic on the right of the screen
 
-	//new version of the demonstration
-	//ofstream myfile;   //file to DEBUG
 	void resetObjects();  //resets the objects position
 	bool displayGraphFlag;  //flag to display the force sensor graph
 };
