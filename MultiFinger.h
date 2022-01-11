@@ -62,7 +62,6 @@ public: //Local Properties
 	virtual void Keyboard(int key, int x, int y);
 	virtual void Display(); //virtual fucntion used to display graphics
 	virtual void AtExit();  //used to close the debug file
-	void MultiFingerStep();  //encapsulates the MultiFinger calculations, returns the force to be displayed in Spidar
 
 	//phsolid objects assigned during buildscene()
 	PHSolidIf *fPhone;

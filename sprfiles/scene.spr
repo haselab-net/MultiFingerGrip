@@ -17,13 +17,21 @@ FWScene fwScene
 		*grMesh			// GRFrame
 	}
 	
-	FWObject fwPointer1{
-		*soPointer1		// PHSolid
+	FWObject fwTool0{
+		*soTool0		// PHSolid
 		*grMeshii	    // GRFrame
 	}
+	FWObject fwDevice0{
+		*soDevice0		// PHSolid
+		*grMeshiii	    // GRFrame
+	}
 	
-	FWObject fwPointer2{
-		*soPointer2		// PHSolid
+	FWObject fwTool1{
+		*soTool1		// PHSolid
+		*grMeshii	    // GRFrame
+	}
+	FWObject fwDevice1{
+		*soDevice1		// PHSolid
 		*grMeshiii	    // GRFrame
 	}
 
@@ -61,35 +69,78 @@ FWScene fwScene
 			}
 		}
 		
-		/* FAKE Pointer 1 */
-		PHSolid soPointer1{
+		/* Tool 0 */
+		PHSolid soTool0{
 			mass = 10.0
 			pose = 1 0 0 0 -0.05 0.15 0.0
 			dynamical = true
-			//*phPointer
-			//*phPointerCube
-			//*phCubeMass
 			PHFrame{
-				CDBox cdPointer1{
+				CDBox cdTool0{
 				boxsize = 0.012 0.012 0.012 
 				}
 			}
 		}
 		
-		/* FAKE Pointer 2 */
-		PHSolid soPointer2{
+		/* Tool 1 */
+		PHSolid soTool1{
 			mass = 10.0
 			pose = 1 0 0 0 0.05 0.15 0.0
 			dynamical = true
-			//*phPointer
-			//*phPointerCube
-			//*phCubeMass
 			PHFrame{
-				CDBox cdPointer2{
+				CDBox cdTool1{
 				boxsize = 0.012 0.012 0.012 
 				}
 			}
 		}
+
+		/* Tool 2 */
+		PHSolid soTool2{
+			mass = 10.0
+			pose = 1 0 0 0 0.05 0.15 0.0
+			dynamical = true
+			PHFrame{
+				CDBox cdTool2{
+				boxsize = 0.012 0.012 0.012 
+				}
+			}
+		}
+
+		/* Device 0 */
+		PHSolid soDevice0{
+			mass = 10.0
+			pose = 1 0 0 0 -0.05 0.15 0.0
+			dynamical = false
+			PHFrame{
+				CDBox cdDevice0{
+				boxsize = 0.02 0.005 0.005 
+				}
+			}
+		}
+		
+		/* Device 1 */
+		PHSolid soDevice1{
+			mass = 10.0
+			pose = 1 0 0 0 0.05 0.15 0.0
+			dynamical = false
+			PHFrame{
+				CDBox cdDevice1{
+				boxsize = 0.02 0.005 0.005 
+				}
+			}
+		}
+
+		/* Device 2 */
+		PHSolid soDevice2{
+			mass = 10.0
+			pose = 1 0 0 0 0.05 0.15 0.0
+			dynamical = false
+			PHFrame{
+				CDBox cdDevice2{
+				boxsize = 0.02 0.005 0.005 
+				}
+			}
+		}
+
 		
 		PHSolid soJenga1{		
 			mass = 10.0

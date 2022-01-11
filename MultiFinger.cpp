@@ -50,6 +50,8 @@ void MultiFinger::BuildScene(){
 	phscene->SetTimeStep(pdt);
 
 	fwscene = GetSdk()->GetScene(i);
+	grip.Build(fwscene);
+
 
 	GetSdk()->GetScene(i)->EnableRenderHaptic();
 	hapscene = phscene->GetHapticEngine();
@@ -198,11 +200,6 @@ void MultiFinger::InitCameraView(){
 	GetCurrentWin()->GetTrackball()->SetTarget(target);	// ƒJƒƒ‰‰ŠúˆÊ’u‚ÌÝ’è
 }
 
-void MultiFinger::MultiFingerStep()
-{
-	// Need to write a code here rfor controlling the fingers.
-
-}
 
 //Calibrates the position of the grip and both pointers
 void MultiFinger::calibrate() {	
@@ -231,8 +228,10 @@ void MultiFinger::TimerFunc(int id){
 
 		phscene->Step();  //springhead physics step
 		spidar->Update(pdt);  //updates the forces displayed in SPIDAR
-
-		MultiFingerStep();  //This function computes the lineal and rotational couplings value
+		
+		//	TODO remove debug code
+		//	grip.Step(spidar->GetPose(), phscene->GetTimeStep());
+		grip.Step(Posed::Trn(0,0.2,0), phscene->GetTimeStep());
 
 		PostRedisplay();
 	}

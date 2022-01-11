@@ -310,6 +310,16 @@
       <Project>{a2b91f83-df0a-473d-9c3b-059673cd2046}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="sprfiles\aluminio.x" />
+    <None Include="sprfiles\hammer_head.x" />
+    <None Include="sprfiles\hammer_stick.x" />
+    <None Include="sprfiles\iphone4.x" />
+    <None Include="sprfiles\jenga.x" />
+    <None Include="sprfiles\phPointerCube.x" />
+    <None Include="sprfiles\scene.spr" />
+    <None Include="sprfiles\table.x" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

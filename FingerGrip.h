@@ -10,7 +10,7 @@ struct FingerDesc {
 	Vec3d position;
 	double mass = 1;
 	double length = 0;
-	double maxLength = 1;
+	double maxLength = 0.05;
 	PHSolidIf* tool=NULL;			//	Tool's solid (should have shape)
 	PHSolidIf* device = NULL;		//	Device's solid (should not have shape or should be no collision)
 	PHSliderJointIf* slider = NULL;	//	slider joint from the device to the tool.
@@ -23,7 +23,7 @@ public:
 	FingerDesc* GetDesc() { return this; }
 	void SetDesc(FingerDesc* desc) { *(FingerDesc*)this = *desc; }
 	void AddForce(double f);
-	void Step(double dt);
+	void Step(Posed gripPose, double dt);
 	void SetMaxLength(double l) {
 		maxLength = l;
 	}
@@ -43,6 +43,7 @@ protected:
 class FingerGrip {
 	Posed pose;
 public:
+	PHSolidIf* soGrip = NULL;
 	std::vector<Finger> fingers;
 	void Step(Posed p, double dt);
 	FingerGrip();
