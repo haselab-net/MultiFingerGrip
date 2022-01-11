@@ -11,10 +11,14 @@ struct FingerDesc {
 	double mass = 1;
 	double length = 0;
 	double maxLength = 1;
+	PHSolidIf* tool=NULL;			//	Tool's solid (should have shape)
+	PHSolidIf* device = NULL;		//	Device's solid (should not have shape or should be no collision)
+	PHSpringIf* coupling = NULL;	//	coupling between tool and device
 };
 
 class Finger: public FingerDesc {
 	double force = 0;
+	int index = -1;
 public:
 	FingerDesc* GetDesc() { return this; }
 	void SetDesc(FingerDesc* desc) { *(FingerDesc*)this = *desc; }
@@ -23,6 +27,7 @@ public:
 	void SetMaxLength(double l) {
 		maxLength = l;
 	}
+	void Build(FWSceneIf* fwScene);
 protected:
 	void LimitLength() {
 		if (length > maxLength) {
@@ -32,7 +37,7 @@ protected:
 			length = 0;
 		}
 	}
-
+	friend class FingerGrip;
 };
 
 class FingerGrip {
@@ -40,8 +45,8 @@ class FingerGrip {
 public:
 	std::vector<Finger> fingers;
 	void Step(Posed p, double dt);
+	FingerGrip();
+	void Build(FWSceneIf* fwScene);
 };
 
-
 #endif
-

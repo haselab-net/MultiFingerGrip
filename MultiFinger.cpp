@@ -58,27 +58,11 @@ void MultiFinger::BuildScene(){
 	//he->EnableHapticEngine(true);						// 力覚エンジンの有効化
 	//he->SetHapticEngineMode(PHHapticEngineDesc::SINGLE_THREAD);
 
-	maxReach = 0.05;
-
 	this->nsolids = phscene->NSolids();
 	DSTR << "Nsolids: " << nsolids << std::endl;  //DEBUG
 	PHSolidIf **solidspnt = phscene->GetSolids();
 
-	//set the objects that are going to be the pointers
-	fPointer1 = phscene->FindObject("soPointer1")->Cast();
-	fPointer2 = phscene->FindObject("soPointer2")->Cast();
 	
-	defaultCenterPose.Pos() = Vec3d(0.0, 0.15, 0.0);
-	defaultPose1.Pos() = Vec3d(maxReach, 0.15, 0.0);
-	fPointer1->SetMass(0.010);
-	fPointer1->SetInertia(fPointer1->GetShape(0)->CalcMomentOfInertia() * (float)(fPointer1->GetMass() / fPointer1->GetShape(0)->CalcVolume()));	// 慣性テンソルの設定
-
-	defaultPose2.Pos() = Vec3d(-maxReach, 0.15, 0.0);
-	fPointer2->SetMass(0.010);  //0.0005 original value
-	fPointer2->SetInertia(fPointer2->GetShape(0)->CalcMomentOfInertia() * (float)(fPointer2->GetMass() / fPointer2->GetShape(0)->CalcVolume()));	// 慣性テンソルの設定
-	fPointer1->SetGravity(false);
-	fPointer2->SetGravity(false);
-
 	//Used to locate the object in the right orientation, from Euler angles
 	//Quaterniond qq;
 	//qq.FromEuler(Vec3f(Radf(0.0f) , 0.0f, Radf(90.0f)));
@@ -86,12 +70,6 @@ void MultiFinger::BuildScene(){
 	//DSTR << pp.OriW() << "," << pp.OriX() << "," << pp.OriY() << "," << pp.OriZ() << std::endl;
 
 	PHSolidIf *floor = phscene->FindObject("soCube")->Cast();
-	fPointer1->GetShape(0)->SetStaticFriction(1000.0f);
-	fPointer2->GetShape(0)->SetStaticFriction(1000.0f);
-	fPointer1->GetShape(0)->SetDynamicFriction(1000.0f);
-	fPointer2->GetShape(0)->SetDynamicFriction(1000.0f);
-	floor->GetShape(0)->SetStaticFriction(0.4f);
-	floor->GetShape(0)->SetDynamicFriction(0.4f);
 	
 	//define jenga object properties
 	fJenga1 = phscene->FindObject("soJenga1")->Cast();
@@ -224,19 +202,7 @@ void MultiFinger::MultiFingerStep()
 }
 
 //Calibrates the position of the grip and both pointers
-void MultiFinger::calibrate() {
-	
-	fPointer1->SetFramePosition(defaultPose1.Pos());
-	fPointer1->SetOrientation(spidar->GetOrientation());
-	fPointer1->SetVelocity(Vec3d(0.0, 0.0, 0.0));
-	fPointer1->SetAngularVelocity(Vec3d(0.0, 0.0, 0.0));
-
-	fPointer2->SetFramePosition(defaultPose2.Pos());
-	fPointer2->SetOrientation(spidar->GetOrientation());
-	fPointer2->SetVelocity(Vec3d(0.0, 0.0, 0.0));
-	fPointer2->SetAngularVelocity(Vec3d(0.0, 0.0, 0.0));
-	fPointer2->SetDynamical(true);
-
+void MultiFinger::calibrate() {	
 	spidar->Calibration();
 }
 
@@ -295,15 +261,6 @@ void MultiFinger::Keyboard(int key, int x, int y){
 			break;
 		case 'w':
 			InitCameraView();
-			break;
-		case 'x': {
-			Posed p1 = fPointer1->GetPose();
-			Posed p2 = fPointer2->GetPose();
-			p1.PosX() = p1.PosX() + 0.1;
-			p2.PosX() = p2.PosX() - 0.1;
-			fPointer1->SetPose(p1);
-			fPointer2->SetPose(p2);
-		}
 			break;
 		case 'c': {
 			calibrate();
