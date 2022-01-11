@@ -275,10 +275,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="FingerGrip.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MultiFinger.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FingerGrip.h" />
     <ClInclude Include="MultiFinger.h" />
   </ItemGroup>
   <ItemGroup>

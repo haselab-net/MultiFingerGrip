@@ -20,7 +20,7 @@ class FingerGrip {
 	Posed pose;
 public:
 	std::vector<Finger> fingers;
-	void Step(double dt, Posed p);
+	void Step(Posed p, double dt);
 };
 
 
