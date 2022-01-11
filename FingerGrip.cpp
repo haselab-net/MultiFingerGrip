@@ -51,5 +51,7 @@ void Finger::Build(FWSceneIf* fwScene) {
 	sjDesc.poseSocket.Ori().RotationArc(Vec3d(0, 0, 1), direction);
 	sjDesc.poseSocket.Pos() = position;	
 	slider = phScene->CreateJoint(device, tool, sjDesc)->Cast();
+	slider->SetSpring(1);
+	slider->SetDamper(0.1);
 	slider->SetTargetPosition(length);
 }
