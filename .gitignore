@@ -1,0 +1,7 @@
+*.suo
+*.db*
+*.ipch
+*.opendb
+/16.0
+/15.0
+*.vcxproj.user
