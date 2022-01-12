@@ -71,7 +71,7 @@ FWScene fwScene
 		
 		/* Tool 0 */
 		PHSolid soTool0{
-			mass = 10.0
+			mass = 0.001
 			pose = 1 0 0 0 -0.05 0.15 0.0
 			dynamical = true
 			PHFrame{
@@ -83,7 +83,7 @@ FWScene fwScene
 		
 		/* Tool 1 */
 		PHSolid soTool1{
-			mass = 10.0
+			mass = 0.001
 			pose = 1 0 0 0 0.05 0.15 0.0
 			dynamical = true
 			PHFrame{
@@ -95,7 +95,7 @@ FWScene fwScene
 
 		/* Tool 2 */
 		PHSolid soTool2{
-			mass = 10.0
+			mass = 0.001
 			pose = 1 0 0 0 0.05 0.15 0.0
 			dynamical = true
 			PHFrame{

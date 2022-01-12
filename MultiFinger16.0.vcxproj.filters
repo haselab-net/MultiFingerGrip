@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="FingerGrip.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="MultiFinger.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="FingerGrip.h" />
+    <ClInclude Include="MultiFinger.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="sprFiles">
+      <UniqueIdentifier>{b9388b1e-4303-49df-a4aa-3915cafaddf7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="sprfiles\aluminio.x">
+      <Filter>sprFiles</Filter>
+    </None>
+    <None Include="sprfiles\hammer_head.x">
+      <Filter>sprFiles</Filter>
+    </None>
+    <None Include="sprfiles\hammer_stick.x">
+      <Filter>sprFiles</Filter>
+    </None>
+    <None Include="sprfiles\iphone4.x">
+      <Filter>sprFiles</Filter>
+    </None>
+    <None Include="sprfiles\jenga.x">
+      <Filter>sprFiles</Filter>
+    </None>
+    <None Include="sprfiles\phPointerCube.x">
+      <Filter>sprFiles</Filter>
+    </None>
+    <None Include="sprfiles\scene.spr">
+      <Filter>sprFiles</Filter>
+    </None>
+    <None Include="sprfiles\table.x">
+      <Filter>sprFiles</Filter>
+    </None>
+  </ItemGroup>
+</Project>

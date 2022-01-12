@@ -20,6 +20,7 @@ class Finger: public FingerDesc {
 	double force = 0;
 	int index = -1;
 public:
+	int GetIndex() { return index; }
 	FingerDesc* GetDesc() { return this; }
 	void SetDesc(FingerDesc* desc) { *(FingerDesc*)this = *desc; }
 	void AddForce(double f);
