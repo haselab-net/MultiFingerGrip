@@ -12,13 +12,13 @@ struct FingerDesc {
 	double length = 0;
 	double maxLength = 0.05;
 	PHSolidIf* tool=NULL;			//	Tool's solid (should have shape)
-	PHSolidIf* device = NULL;		//	Device's solid (should not have shape or should be no collision)
 	PHSliderJointIf* slider = NULL;	//	slider joint from the device to the tool.
 };
 
 class Finger: public FingerDesc {
 	double force = 0;
 	int index = -1;
+	Quaterniond deviceOrientation;
 public:
 	int GetIndex() { return index; }
 	FingerDesc* GetDesc() { return this; }
