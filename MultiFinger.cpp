@@ -191,7 +191,7 @@ void MultiFinger::InitCameraView(){
 	GetCurrentWin()->GetTrackball()->SetPosition(pos);
 	Affinef af;
 	af.Pos() = pos;
-	af.LookAt(Vec3d(0, 0, 0), Vec3d(0, 1, 0));
+	af.LookAt(Vec3f(0, 0, 0), Vec3f(0, 1, 0));
 	Quaterniond ori;
 	ori.FromMatrix(af.Rot());
 	GetCurrentWin()->GetTrackball()->SetOrientation(ori);
@@ -229,7 +229,16 @@ void MultiFinger::TimerFunc(int id){
 		phscene->Step();  //springhead physics step
 		
 		//	TODO remove debug code and set spidar's info
-		grip.Step(Posed::Trn(0, 0.2, 0), phscene->GetTimeStep());
+		static int count = 0;
+		count++;
+		if (count < 100) {
+			grip.Step(Posed::Trn(0, 0.2, 0), phscene->GetTimeStep());
+		}
+		else {
+			Posed pose = Posed::Trn(0, 0.2 - 0.0001 * (count - 100), 0);
+			pose.Ori() = Quaterniond::Rot(Rad(90), 'x');
+			grip.Step(pose, phscene->GetTimeStep());
+		}
 		//	grip.Step(spidar->GetPose(), phscene->GetTimeStep());	//	this will be actual code.
 
 		DSTR << "CouplingForce: ";

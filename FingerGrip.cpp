@@ -3,11 +3,11 @@
 void Finger::AddForce(double f) {
 	force += f;
 }
-void Finger::Step(Posed gripPose, double dt) {
+void Finger::Step(PHSolidIf* soGripTool, double dt) {
 	length += force * dt / mass;
 	force = 0;
 	LimitLength();
-	Posed pose = gripPose * Posed::Trn(position + length*direction);
+	Posed pose = soGripTool->GetPose() * Posed::Trn(position + length*direction);
 	device->SetPose(pose);
 }
 
@@ -22,21 +22,45 @@ FingerGrip::FingerGrip() {
 	}
 }
 void FingerGrip::Build(FWSceneIf* fwScene) {
-	soGrip = fwScene->GetPHScene()->CreateSolid();
-	soGrip->SetGravity(false);
-	CDSphereDesc sd;
-	sd.radius = 0.01;
-	CDShapeIf* shape = fwScene->GetSdk()->GetPHSdk()->CreateShape(sd);
-	soGrip->AddShape(shape);
+	gripTool = fwScene->GetPHScene()->CreateSolid();
+	gripTool->SetGravity(false);
+	CDBoxDesc bd;
+	bd.boxsize = 0.01*Vec3d(1,2,0.5);
+	CDShapeIf* shape = fwScene->GetSdk()->GetPHSdk()->CreateShape(bd);
+	shape->SetDensity(0.1f);
+	gripTool->AddShape(shape);
+	gripTool->CompInertia();
+	gripTool->SetDynamical(true);
+
+	gripDevice = fwScene->GetPHScene()->CreateSolid();
+	gripDevice->SetGravity(false);
+	gripDevice->SetDynamical(false);
+	bd.boxsize = 0.01 * Vec3d(2, 1, 0.5);
+	shape = fwScene->GetSdk()->GetPHSdk()->CreateShape(bd);
+	shape->SetDensity(0.1f);
+	gripDevice->AddShape(shape);
+	gripDevice->CompInertia();
+
+
+	PHSpringDesc sprd;
+	sprd.spring = Vec3f(1, 1, 1) * 5000;	//	5N/mm
+	sprd.damper = Vec3f(1, 1, 1) * 5;		//	small damper
+	sprd.springOri = sprd.spring.x;
+	sprd.damperOri = sprd.damper.x;
+	spring = fwScene->GetPHScene()->CreateJoint(gripTool, gripDevice, sprd)->Cast();
+
 	//	build fingers
 	for (Finger& finger : fingers) {
-		finger.Build(fwScene);
+		finger.Build(fwScene, gripTool);
 	}
 
-	Step(Posed::Trn(0, 0.2, 0), 0.01);	//	set device position
+	Vec3d gripPosition = Vec3d(0, 0.2, 0);
+	Step(Posed::Trn(gripPosition), 0.01);	//	set device and finger position
+	gripTool->SetFramePosition(gripPosition);	//	set tool position
 
 	//	set collision mode and tool pose
-	fwScene->GetPHScene()->SetContactMode(soGrip, PHSceneDesc::MODE_NONE);
+	fwScene->GetPHScene()->SetContactMode(gripTool, PHSceneDesc::MODE_NONE);
+	fwScene->GetPHScene()->SetContactMode(gripDevice, PHSceneDesc::MODE_NONE);
 	for (Finger& finger : fingers) {
 		fwScene->GetPHScene()->SetContactMode(finger.device, PHSceneDesc::MODE_NONE);
 		finger.tool->SetPose(finger.device->GetPose());
@@ -46,14 +70,19 @@ void FingerGrip::Build(FWSceneIf* fwScene) {
 
 void FingerGrip::Step(Posed p, double dt) {
 	pose = p;
-	soGrip->SetPose(pose);
+	gripDevice->SetPose(pose);
+	gripDevice->SetVelocity(Vec3d(0, 0, 0));
+	gripDevice->SetAngularVelocity(Vec3d(0, 0, 0));
 	for (Finger& finger: fingers) {
-		finger.Step(p, dt);
+		finger.Step(gripTool, dt);
 	}
+
+	Vec6d f = spring->GetMotorForce();
+	DSTR << "Grip force: " << f << "ori:" << gripDevice->GetOrientation() << gripTool->GetOrientation() << std::endl;
 }
 
 
-void Finger::Build(FWSceneIf* fwScene) {
+void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripTool) {
 	PHSceneIf* phScene = fwScene->GetPHScene();
 	ostringstream toolName;
 	toolName << "soTool" << index;
