@@ -108,9 +108,10 @@ void MultiFinger::BuildScene(){
 	fTool0->GetShape(0)->SetDynamicFriction(1000.0f);
 	fTool1->GetShape(0)->SetDynamicFriction(1000.0f);
 	fTool2->GetShape(0)->SetDynamicFriction(1000.0f);
-	floor->GetShape(0)->SetStaticFriction(0.4f);
-	floor->GetShape(0)->SetDynamicFriction(0.4f);
 	*/
+	floor->GetShape(0)->SetStaticFriction(0.4f);
+	
+	
 	//define jenga object properties
 	fJenga1 = phscene->FindObject("soJenga1")->Cast();
 	fJenga1->GetShape(0)->SetDensity(357.142f);  //non specific value try and error
@@ -220,8 +221,9 @@ void MultiFinger::InitHapticInterface(){
 		flexiforce = NULL;
 	}*/
 }
-void MultiFinger::MultiFingerStep(Vec3f* spidarForce)
-{/*
+//void MultiFinger::MultiFingerStep(Vec3f* spidarForce)
+//{
+/*
 	double linSpring = (_stricmp(spidar->GetSpidarType(), "SpidarG6X4R") == 0 || _stricmp(spidar->GetSpidarType(), "SpidarG6X4L") == 0)
 		? 50 : 100; //1500;
 	double linDamper = 2;//5;     //3 my value
@@ -300,8 +302,8 @@ void MultiFinger::MultiFingerStep(Vec3f* spidarForce)
 			grabForce2 = (double)(- grabForce0 - grabForce1 + 10);
 			
 			//grabForce = (double)(uartMotorDriver->ReadForce((int)i) * -0.009914 + 2.1105);
-			DSTR << "Force1: " << grabForce0 << "," << "Force2: " << grabForce1 << "," << "Force3: " << grabForce2 << ";";;
-			DSTR << std::endl;
+			//DSTR << "Force1: " << grabForce0 << "," << "Force2: " << grabForce1 << "," << "Force3: " << grabForce2 << ";";;
+			//DSTR << std::endl;
 
 			//}
 			//else {}
@@ -312,7 +314,7 @@ void MultiFinger::MultiFingerStep(Vec3f* spidarForce)
 	Vec3d grabforce2;
 
 	double distance = ((pos1 + pos2 + pos3) - (devicePose1 + devicePose2 + devicePose3)).norm() + 2; // need to calculate the constant values (2) here constant is (delta t/mi) where mi is the mass of the hands
-	if (grabForce0 && grabForce1 >= 10) {   //nearly 0.2 is the original values
+	if (grabForce0 && grabForce1 >= 20) {   //nearly 0.2 is the original values
 		if (distance < maxReach * 2) {	//	
 	//used to separate the pointers, once they had been in contact
 			grabforce0 = Tooldistance1.unit() * 0.1;
@@ -332,9 +334,27 @@ void MultiFinger::MultiFingerStep(Vec3f* spidarForce)
 		fTool0->AddForce(grabforce0);
 		fTool1->AddForce(grabforce1);
 		fTool2->AddForce(grabforce2);
-		
+		//This block displays the calculated force and torque in SPIDAR
+		//The ifs avoid displaying to much force on the haptic grip
+		float maxForce = 0.20f;
+		*spidarForce = couplingForce1 + couplingForce2 + couplingForce0;
+		/*
+		if (spidarForce->X() < 0)
+			spidarForce->X() = max(spidarForce->X(), -maxForce);
+		else
+			spidarForce->X() = min(spidarForce->X(), maxForce);
+
+		if (spidarForce->Y() < 0)
+			spidarForce->Y() = max(spidarForce->Y(), -maxForce);
+		else
+			spidarForce->Y() = min(spidarForce->Y(), maxForce);
+
+		if (spidarForce->Z() < 0)
+			spidarForce->Z() = max(spidarForce->Z(), -maxForce);
+		else
+			spidarForce->Z() = min(spidarForce->Z(), maxForce);
 	}*/
-}
+//}
 
 void MultiFinger::InitCameraView(){
 
@@ -410,7 +430,7 @@ void MultiFinger::TimerFunc(int id){
 			pose.Ori() = Quaterniond::Rot(Rad(90), 'x');
 			grip.Step(pose, phscene->GetTimeStep());
 		}
-		//	grip.Step(spidar->GetPose(), phscene->GetTimeStep());	//	this will be actual code.
+			grip.Step(spidar->GetPose(), phscene->GetTimeStep());	//	this will be actual code.
 
 		DSTR << "CouplingForce: ";
 		for (Finger& finger : grip.fingers) {
@@ -430,9 +450,12 @@ void MultiFinger::TimerFunc(int id){
 			<< " length:" << grip.fingers[0].length << std::endl;
 		
 		//Vec3f spidarForce;
-		//MultiFingerStep(&spidarForce);
-
+		//Vec3f spidarTorque;	
 		spidar->Update(pdt);  //updates the forces displayed in SPIDAR
+		
+		//MultiFingerStep(&spidarForce);  //This function computes the lineal and rotational couplings value
+		//spidar->SetForce(-spidarForce);  //This function set the force 
+		
 		PostRedisplay();
 	}
 	else {
