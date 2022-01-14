@@ -8,7 +8,6 @@ void Finger::Step(PHSolidIf* soGripTool, double dt) {
 	force = 0;
 	LimitLength();
 
-	//	Posed pose = soGripTool->GetPose() * Posed::Trn(position + length*direction);
 	Posed pose;
 	pose.Pos() = position + length*direction;
 	pose.Ori() = deviceOrientation;
@@ -23,13 +22,15 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripTool) {
 		tool = fwScene->GetPHScene()->CreateSolid();
 	}
 	tool->SetGravity(false);
+	tool->SetFramePosition(gripTool->GetPose() * (position + length*direction));
 
 	deviceOrientation.RotationArc(Vec3d(0, 0, 1), direction);
 	PHSliderJointDesc sjDesc;
+	sjDesc.posePlug.Ori() = deviceOrientation;
+	sjDesc.posePlug.Pos() = position + length * direction;
 	sjDesc.poseSocket.Ori() = deviceOrientation;
-	sjDesc.poseSocket.Pos() = position + length * direction;
-	slider = phScene->CreateJoint(gripTool, tool, sjDesc)->Cast();
-	slider->SetSpring(5000);	//	5N/mm = 5000N/m 
+	slider = phScene->CreateJoint(tool, gripTool, sjDesc)->Cast();
+	slider->SetSpring(1000);	//	1N/mm = 1000N/m 
 	slider->SetDamper(slider->GetSpring() * 0.1);
 	slider->SetTargetPosition(0);
 }
@@ -55,6 +56,8 @@ void FingerGrip::Build(FWSceneIf* fwScene) {
 	gripTool->AddShape(shape);
 	gripTool->CompInertia();
 	gripTool->SetDynamical(true);
+	Vec3d gripPosition = Vec3d(0, 0.2, 0);
+	gripTool->SetFramePosition(gripPosition);	//	set tool position
 
 	gripDevice = fwScene->GetPHScene()->CreateSolid();
 	gripDevice->SetGravity(false);
@@ -64,6 +67,9 @@ void FingerGrip::Build(FWSceneIf* fwScene) {
 	shape->SetDensity(0.1f);
 	gripDevice->AddShape(shape);
 	gripDevice->CompInertia();
+	gripDevice->SetPose(Posed::Trn(gripPosition));
+	gripDevice->SetVelocity(Vec3d(0, 0, 0));
+	gripDevice->SetAngularVelocity(Vec3d(0, 0, 0));
 
 
 	PHSpringDesc sprd;
@@ -77,10 +83,6 @@ void FingerGrip::Build(FWSceneIf* fwScene) {
 	for (Finger& finger : fingers) {
 		finger.Build(fwScene, gripTool);
 	}
-
-	Vec3d gripPosition = Vec3d(0, 0.2, 0);
-	Step(Posed::Trn(gripPosition), 0.01);	//	set device and finger position
-	gripTool->SetFramePosition(gripPosition);	//	set tool position
 
 	//	set collision mode and tool pose
 	fwScene->GetPHScene()->SetContactMode(gripTool, PHSceneDesc::MODE_NONE);
