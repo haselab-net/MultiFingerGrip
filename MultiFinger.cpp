@@ -422,7 +422,8 @@ void MultiFinger::TimerFunc(int id){
 		phscene->Step();  //springhead physics step
 		
 		//	TODO remove debug code and set spidar's info
-		/*
+		//	grip.Step(spidar->GetPose(), phscene->GetTimeStep());	//	this will be actual code.
+		//*	//	debug codes:
 		grip.Step(Posed::Trn(0, 0.2, 0), phscene->GetTimeStep());
 		/*/
 		static int count = 0;
@@ -436,20 +437,25 @@ void MultiFinger::TimerFunc(int id){
 			grip.Step(pose, phscene->GetTimeStep());
 		}
 		//	*/
-		//	grip.Step(spidar->GetPose(), phscene->GetTimeStep());	//	this will be actual code.
-
-		DSTR << "gripForce: " << grip.spring->GetMotorForce() << std::endl;
 
 		DSTR << "CouplingForce: ";
+		Vec3d totalForce, totalTorque;
 		for (Finger& finger : grip.fingers) {
 			if(finger.GetIndex() < 2) finger.AddForce(1);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
-			double couplingForce = finger.slider->GetMotorForce();
-			finger.AddForce(-couplingForce);
+			Vec6d couplingForce = finger.spring->GetMotorForce();
+			finger.AddForce(-couplingForce[0]);
 			//	TODO use couplingForce to feedback force to spidar
 			//spidar->SetForce(Fc, 0);	//must be called
 			DSTR << couplingForce << ", ";
+
+			Vec3d p = finger.position + finger.length * finger.direction;
+			Vec3d f = couplingForce.sub_vector(0, Vec3d());
+			Vec3d t = couplingForce.sub_vector(3, Vec3d());
+			totalForce += f;
+			totalTorque += t +  p % f;
 		}
 		DSTR << std::endl;
+		DSTR << "Total = f:" << totalForce << " t:" << totalTorque << std::endl;
 
 		//	Following two lines fixs the tool[0] to see coupling force for debugging.
 		grip.fingers[0].tool->SetFramePosition(Vec3d(0.05, 0.2, 0));

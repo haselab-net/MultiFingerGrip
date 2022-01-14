@@ -11,7 +11,7 @@ struct FingerDesc {
 	double length = 0;
 	double maxLength = 0.05;
 	PHSolidIf* tool=NULL;			//	Tool's solid (should have shape)
-	PHSliderJointIf* slider = NULL;	//	slider joint from the device to the tool.
+	PHSpringIf* spring = NULL;	//	slider joint from the device to the tool.
 };
 
 class Finger: public FingerDesc {
@@ -43,9 +43,7 @@ protected:
 class FingerGrip {
 	Posed pose;
 public:
-	PHSolidIf* gripTool = NULL;
 	PHSolidIf* gripDevice = NULL;
-	PHSpringIf* spring = NULL;
 	std::vector<Finger> fingers;
 	void Step(Posed p, double dt);
 	FingerGrip();
