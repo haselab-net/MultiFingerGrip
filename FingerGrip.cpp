@@ -4,7 +4,7 @@ void Finger::AddForce(double f) {
 	force += f;
 }
 void Finger::Step(PHSolidIf* soGripTool, double dt) {
-	length += force * dt / mass;
+	length += force * dt;
 	force = 0;
 	LimitLength();
 
@@ -48,14 +48,14 @@ FingerGrip::FingerGrip() {
 }
 void FingerGrip::Build(FWSceneIf* fwScene) {
 	gripTool = fwScene->GetPHScene()->CreateSolid();
+	gripTool->SetMass(0.01);
+	gripTool->SetInertia(0.0001 * Matrix3d::Unit());
+	gripTool->SetDynamical(true);
 	gripTool->SetGravity(false);
 	CDBoxDesc bd;
 	bd.boxsize = 0.01 * Vec3d(1, 2, 0.5);
 	CDShapeIf* shape = fwScene->GetSdk()->GetPHSdk()->CreateShape(bd);
-	shape->SetDensity(100);
 	gripTool->AddShape(shape);
-	gripTool->CompInertia();
-	gripTool->SetDynamical(true);
 	Vec3d gripPosition = Vec3d(0, 0.2, 0);
 	gripTool->SetFramePosition(gripPosition);	//	set tool position
 
@@ -97,8 +97,5 @@ void FingerGrip::Step(Posed p, double dt) {
 	for (Finger& finger: fingers) {
 		finger.Step(gripTool, dt);
 	}
-
-	Vec6d f = spring->GetMotorForce();
-	DSTR << "Grip force: " << f << "ori:" << gripDevice->GetOrientation() << gripTool->GetOrientation() << std::endl;
 }
 

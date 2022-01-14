@@ -8,7 +8,6 @@ using namespace std;
 struct FingerDesc {
 	Vec3d direction;
 	Vec3d position;
-	double mass = 1;
 	double length = 0;
 	double maxLength = 0.05;
 	PHSolidIf* tool=NULL;			//	Tool's solid (should have shape)
