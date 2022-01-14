@@ -2,10 +2,10 @@
 #include <windows.h>
 #include <conio.h>
 #include <Springhead.h>
-#include <HumanInterface/SprHIDRUsb.h>
-#include <HumanInterface/SprHIKeyMouse.h>
-#include <Foundation/SprUTQPTimer.h>
-#include <iomanip>
+//#include <HumanInterface/SprHIDRUsb.h>
+//#include <HumanInterface/SprHIKeyMouse.h>
+//#include <Foundation/SprUTQPTimer.h>
+//#include <iomanip>
 
 
 
@@ -450,7 +450,7 @@ void MultiFinger::TimerFunc(int id){
 			<< " length:" << grip.fingers[0].length << std::endl;
 		
 		//Vec3f spidarForce;
-		//Vec3f spidarTorque;	
+			
 		spidar->Update(pdt);  //updates the forces displayed in SPIDAR
 		
 		//MultiFingerStep(&spidarForce);  //This function computes the lineal and rotational couplings value
