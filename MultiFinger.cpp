@@ -1,6 +1,12 @@
 #include "MultiFinger.h"
 #include <windows.h>
 #include <conio.h>
+#include <Springhead.h>
+#include <HumanInterface/SprHIDRUsb.h>
+#include <HumanInterface/SprHIKeyMouse.h>
+#include <Foundation/SprUTQPTimer.h>
+#include <iomanip>
+
 
 
 //Constructor 
@@ -63,12 +69,34 @@ void MultiFinger::BuildScene(){
 	PHHapticEngineDesc hd;
 	//he->EnableHapticEngine(true);						// 力覚エンジンの有効化
 	//he->SetHapticEngineMode(PHHapticEngineDesc::SINGLE_THREAD);
-
+	maxReach = 0.05;
 	this->nsolids = phscene->NSolids();
 	DSTR << "Nsolids: " << nsolids << std::endl;  //DEBUG
 	PHSolidIf **solidspnt = phscene->GetSolids();
+	/*
+	//set the objects that are going to be the Tools (BINOD)
+	fTool0 = phscene->FindObject("soTool0")->Cast();
+	fTool1 = phscene->FindObject("soTool1")->Cast();
+	fTool2 = phscene->FindObject("soTool2")->Cast();
 
+	defaultCenterPose.Pos() = Vec3d(0.0, 0.15, 0.0);
+
+	defaultPose1.Pos() = Vec3d(maxReach, 0.15, 0.0);
+	fTool0->SetMass(0.010);
+	fTool0->SetInertia(fTool0->GetShape(0)->CalcMomentOfInertia() * (float)(fTool0->GetMass() / fTool0->GetShape(0)->CalcVolume()));	// 慣性テンソルの設定
+
+	defaultPose2.Pos() = Vec3d(maxReach, -0.15, 0.0);
+	fTool1->SetMass(0.010);  //0.0005 original value
+	fTool1->SetInertia(fTool1->GetShape(0)->CalcMomentOfInertia() * (float)(fTool1->GetMass() / fTool1->GetShape(0)->CalcVolume()));	// 慣性テンソルの設定
 	
+	//Default pose for pointer 3
+	defaultPose3.Pos() = Vec3d(-maxReach, -0.15, 0.0);
+	fTool2->SetMass(0.010);  //0.0005 original value
+	fTool2->SetInertia(fTool2->GetShape(0)->CalcMomentOfInertia() * (float)(fTool2->GetMass() / fTool2->GetShape(0)->CalcVolume()));	// 慣性テンソルの設定
+	fTool0->SetGravity(false);
+	fTool1->SetGravity(false);
+	fTool2->SetGravity(false);
+	*/
 	//Used to locate the object in the right orientation, from Euler angles
 	//Quaterniond qq;
 	//qq.FromEuler(Vec3f(Radf(0.0f) , 0.0f, Radf(90.0f)));
@@ -76,6 +104,15 @@ void MultiFinger::BuildScene(){
 	//DSTR << pp.OriW() << "," << pp.OriX() << "," << pp.OriY() << "," << pp.OriZ() << std::endl;
 
 	PHSolidIf *floor = phscene->FindObject("soCube")->Cast();
+	/*fTool0->GetShape(0)->SetStaticFriction(1000.0f);
+	fTool1->GetShape(0)->SetStaticFriction(1000.0f);
+	fTool2->GetShape(0)->SetStaticFriction(1000.0f);
+	fTool0->GetShape(0)->SetDynamicFriction(1000.0f);
+	fTool1->GetShape(0)->SetDynamicFriction(1000.0f);
+	fTool2->GetShape(0)->SetDynamicFriction(1000.0f);
+	*/
+	floor->GetShape(0)->SetStaticFriction(0.4f);
+	
 	
 	//define jenga object properties
 	fJenga1 = phscene->FindObject("soJenga1")->Cast();
@@ -150,7 +187,7 @@ void MultiFinger::InitHapticInterface(){
 			}
 		}
 		DRUARTMotorDriverDesc uartDesc;
-		hiSdk->AddRealDevice(DRUARTMotorDriverIf::GetIfInfoStatic(), &uartDesc);
+		uartMotorDriver = hiSdk->AddRealDevice(DRUARTMotorDriverIf::GetIfInfoStatic(), &uartDesc)->Cast();
 		hiSdk->AddRealDevice(DRKeyMouseWin32If::GetIfInfoStatic());
 		hiSdk->Print(DSTR);
 		hiSdk->Print(std::cout);
@@ -186,6 +223,140 @@ void MultiFinger::InitHapticInterface(){
 		flexiforce = NULL;
 	}*/
 }
+//void MultiFinger::MultiFingerStep(Vec3f* spidarForce)
+//{
+/*
+	double linSpring = (_stricmp(spidar->GetSpidarType(), "SpidarG6X4R") == 0 || _stricmp(spidar->GetSpidarType(), "SpidarG6X4L") == 0)
+		? 50 : 100; //1500;
+	double linDamper = 2;//5;     //3 my value
+	double rotSpring = 0.001;//10;      //torsional spring   original value 0.001
+	double rotDamper = 0.1 * 0.001; // 0.1*rotSpring;   //torsional damper  orignal values 0.1*rotSpring
+
+	Vec3d pos1 = fTool0->GetPose().Pos();
+	Vec3d pos2 = fTool1->GetPose().Pos();
+	Vec3d pos3 = fTool2->GetPose().Pos();
+	Vec3d vel1 = fTool0->GetVelocity();
+	Vec3d vel2 = fTool1->GetVelocity();
+	Vec3d vel3 = fTool2->GetVelocity();
+
+	Vec3d centerPos = Vec3d((pos1.X() + pos2.X() + pos3.X()) / 2, (pos1.Y() + pos2.Y() + pos3.Y()) / 2, (pos1.Z() + pos2.Z() + pos3.Z()) / 2);  //middle point between the solids
+	Vec3d Tooldistance1 = pos1 - centerPos;
+	Vec3d Tooldistance2 = pos2 - centerPos;  //distance from the middle point to the pointer
+	Vec3d Tooldistance3 = pos3 - centerPos; //third pointer middle point to the pointer.
+
+	Quaterniond spidarRot = spidar->GetOrientation();
+	Vec3d unitVectorX = (spidarRot * Vec3d(1, 0, 0)).unit();  //gets a X axis component of the spidar orientation
+	Posed devicePose1 = Posed(1, 0, 0, 0, Tooldistance1 * unitVectorX, 0, 0);   //gets the local orientation on X axis and match it with spidar orientation
+	Posed devicePose2 = Posed(1, 0, 0, 0, Tooldistance2 * unitVectorX, 0, 0);
+	Posed devicePose3 = Posed(1, 0, 0, 0, Tooldistance3 * unitVectorX, 0, 0);
+
+	Posed spidarPose = spidar->GetPose();
+	spidarPose.Pos() *= posScale;   //scales the spidar device position
+	Posed spidarPose1 = spidarPose * devicePose1;  //locate pointers accordingly to spidar position, on the local orientation axis
+	Posed spidarPose2 = spidarPose * devicePose2;
+	Posed spidarPose3 = spidarPose * devicePose3;
+	Vec3d spidarTooldistance1 = spidarPose1.Pos() - spidarPose.Pos();   //global distance between the pointers and the spidarposition (after scale)
+	Vec3d spidarTooldistance2 = spidarPose2.Pos() - spidarPose.Pos();
+	Vec3d spidarTooldistance3 = spidarPose3.Pos() - spidarPose.Pos();
+
+	Quaterniond rotationDelta1 = fTool0->GetOrientation() * spidarPose1.Ori().Inv(); //Mix orientation of the spidar pointer and the solids
+	Quaterniond rotationDelta2 = fTool1->GetOrientation() * spidarPose2.Ori().Inv();
+	Quaterniond rotationDelta3 = fTool2->GetOrientation() * spidarPose3.Ori().Inv();
+
+	Vec3d spidarVel = spidar->GetVelocity();
+	Vec3d spidarAngVel = spidar->GetAngularVelocity();
+	
+	//gets the pointer velocity
+	Vec3d spidarVel1 = spidarVel + (spidarAngVel % spidarTooldistance1); // spidar angular vel. cross product to pointer distance to the center, plus pointer velocity
+	Vec3d spidarVel2 = spidarVel + (spidarAngVel % spidarTooldistance2); // (Cross Multiplication (TO GET NORMAL VECTOR))
+	Vec3d spidarVel3 = spidarVel + (spidarAngVel % spidarTooldistance3); // (Cross Multiplication (TO GET NORMAL VECTOR))
+
+	//gets the rotation vector
+	Vec3d rotAngle1 = rotationDelta1.Rotation();
+	Vec3d rotAngle2 = rotationDelta2.Rotation();
+	Vec3d rotAngle3 = rotationDelta3.Rotation();
+
+	//Gets the lineal coupling force 
+	Vec3d couplingForce0 = (-linSpring * ((pos1 - defaultCenterPose.Pos()) - spidarPose1.Pos()) - linDamper * (vel1 - spidarVel1));
+	Vec3d couplingForce1 = (-linSpring * ((pos2 - defaultCenterPose.Pos()) - spidarPose2.Pos()) - linDamper * (vel2 - spidarVel2));
+	Vec3d couplingForce2 = (-linSpring * ((pos3 - defaultCenterPose.Pos()) - spidarPose3.Pos()) - linDamper * (vel3 - spidarVel3));
+	//total coupling force
+	Vec3d Fc = (couplingForce0 + couplingForce2 + couplingForce1);
+
+	spidar->SetForce(-Fc, 0);
+
+
+	//This if is always true
+
+	static int c = 0;
+	c++;
+
+	if (uartMotorDriver->NForce() > 0) {
+		for (size_t i = 0; i < uartMotorDriver->NForce(); ++i) {
+			//DSTR << uartMotorDriver->ReadForce((int)i) << ",";
+			//DSTR << std::endl;
+
+			//if (uartMotorDriver->ReadForce((int)i) <= 200) {
+
+				//grabforce1 = (double)(uartMotorDriver->ReadForce(1)/800 +0.2);
+			grabForce0 = (double)(uartMotorDriver->ReadForce(1) * 0.9814 - 155.8);
+			grabForce1 = (double)(uartMotorDriver->ReadForce(3) * 0.9814 - 134.6);
+			grabForce2 = (double)(- grabForce0 - grabForce1 + 10);
+			
+			//grabForce = (double)(uartMotorDriver->ReadForce((int)i) * -0.009914 + 2.1105);
+			//DSTR << "Force1: " << grabForce0 << "," << "Force2: " << grabForce1 << "," << "Force3: " << grabForce2 << ";";;
+			//DSTR << std::endl;
+
+			//}
+			//else {}
+		}
+	}
+	Vec3d grabforce0;
+	Vec3d grabforce1;
+	Vec3d grabforce2;
+
+	double distance = ((pos1 + pos2 + pos3) - (devicePose1 + devicePose2 + devicePose3)).norm() + 2; // need to calculate the constant values (2) here constant is (delta t/mi) where mi is the mass of the hands
+	if (grabForce0 && grabForce1 >= 20) {   //nearly 0.2 is the original values
+		if (distance < maxReach * 2) {	//	
+	//used to separate the pointers, once they had been in contact
+			grabforce0 = Tooldistance1.unit() * 0.1;
+			grabforce1 = Tooldistance2.unit() * 0.1;
+			grabforce2 = Tooldistance3.unit() * 0.1;
+
+		}
+		else {
+			//If the force is bellow the threshold value, then apply the force into the haptic pointers
+			grabforce0 = Tooldistance1.unit() * grabForce0;
+			grabforce1 = Tooldistance2.unit() * grabForce1;
+			grabforce2 = Tooldistance3.unit() * grabForce2;
+		}
+		// getting total force for coupling force calculations
+
+		//update the haptic pointers
+		fTool0->AddForce(grabforce0);
+		fTool1->AddForce(grabforce1);
+		fTool2->AddForce(grabforce2);
+		//This block displays the calculated force and torque in SPIDAR
+		//The ifs avoid displaying to much force on the haptic grip
+		float maxForce = 0.20f;
+		*spidarForce = couplingForce1 + couplingForce2 + couplingForce0;
+		/*
+		if (spidarForce->X() < 0)
+			spidarForce->X() = max(spidarForce->X(), -maxForce);
+		else
+			spidarForce->X() = min(spidarForce->X(), maxForce);
+
+		if (spidarForce->Y() < 0)
+			spidarForce->Y() = max(spidarForce->Y(), -maxForce);
+		else
+			spidarForce->Y() = min(spidarForce->Y(), maxForce);
+
+		if (spidarForce->Z() < 0)
+			spidarForce->Z() = max(spidarForce->Z(), -maxForce);
+		else
+			spidarForce->Z() = min(spidarForce->Z(), maxForce);
+	}*/
+//}
 
 void MultiFinger::InitCameraView(){
 
@@ -205,12 +376,32 @@ void MultiFinger::InitCameraView(){
 
 //Calibrates the position of the grip and both pointers
 void MultiFinger::calibrate() {	
-	spidar->Calibration();
+	/*
+	fTool0->SetFramePosition(defaultPose1.Pos());
+	fTool0->SetOrientation(spidar->GetOrientation());
+	fTool0->SetVelocity(Vec3d(0.0, 0.0, 0.0));
+	fTool0->SetAngularVelocity(Vec3d(0.0, 0.0, 0.0));
+
+	fTool1->SetFramePosition(defaultPose2.Pos());
+	fTool1->SetOrientation(spidar->GetOrientation());
+	fTool1->SetVelocity(Vec3d(0.0, 0.0, 0.0));
+	fTool1->SetAngularVelocity(Vec3d(0.0, 0.0, 0.0));
+
+	fTool2->SetFramePosition(defaultPose3.Pos());
+	fTool2->SetOrientation(spidar->GetOrientation());
+	fTool2->SetVelocity(Vec3d(0.0, 0.0, 0.0));
+	fTool2->SetAngularVelocity(Vec3d(0.0, 0.0, 0.0));
+
+	// Check this one (if only one or all pointers)
+	//fTool1->SetDynamical(true);
+	//fTool1->SetDynamical(true);
+	fTool2->SetDynamical(true);
+	*/spidar->Calibration();
 }
 
 //This multimedia thread handles the haptic (6DOF virtual coupling pointers) and physics simulation (Springhead)
 void MultiFinger::TimerFunc(int id){
-
+	
 	//DSTR << "timers id: " << pTimerID << std::endl;
 	if (pTimerID == id){
 		// Count "Cycle Per Second"
@@ -253,7 +444,7 @@ void MultiFinger::TimerFunc(int id){
 			double couplingForce = finger.slider->GetMotorForce();
 			finger.AddForce(-couplingForce);
 			//	TODO use couplingForce to feedback force to spidar
-			//	spidar->SetForce()	must be called
+			//spidar->SetForce(Fc, 0);	//must be called
 			DSTR << couplingForce << ", ";
 		}
 		DSTR << std::endl;
@@ -268,7 +459,9 @@ void MultiFinger::TimerFunc(int id){
 				<< " target:" << grip.fingers[i].slider->GetTargetPosition()
 				<< " length:" << grip.fingers[i].length << std::endl;
 		}*/
-
+		
+		//Vec3f spidarForce;
+		//Vec3f spidarTorque;	
 		for (Finger& finger : grip.fingers) {
 			Vec3d f, t;
 			finger.slider->GetConstraintForce(f, t);
@@ -277,6 +470,10 @@ void MultiFinger::TimerFunc(int id){
 		}
 
 		spidar->Update(pdt);  //updates the forces displayed in SPIDAR
+		
+		//MultiFingerStep(&spidarForce);  //This function computes the lineal and rotational couplings value
+		//spidar->SetForce(-spidarForce);  //This function set the force 
+		
 		PostRedisplay();
 	}
 	else {

@@ -19,6 +19,7 @@
 #include <Springhead.h>
 #include <Framework\SprFWApp.h>
 #include <HumanInterface\SprHIDRUsb.h>
+#include <HumanInterface/SprHIKeyMouse.h>
 
 #include <iomanip>
 
@@ -62,14 +63,30 @@ public: //Local Properties
 	virtual void Keyboard(int key, int x, int y);
 	virtual void Display(); //virtual fucntion used to display graphics
 	virtual void AtExit();  //used to close the debug file
-
+	//void MultiFinger::MultiFingerStep(Vec3f* spidarForce);
+	
 	//phsolid objects assigned during buildscene()
 	PHSolidIf *fPhone;
+	//Binod Define phsolid objects
+	PHSolidIf* fTool0;
+	PHSolidIf* fTool1;
+	PHSolidIf* fTool2;
 	PHSolidIf *fHammer;
 	PHSolidIf *fJenga1;
 	//PHSolidIf *fJenga2;
 	//PHSolidIf *fJenga3;
 	PHSolidIf *fAluminio;
+
+	//Used MultiFinger manipulation methods (Binod)
+	Posed defaultCenterPose;
+	Posed defaultPose1;
+	Posed defaultPose2;
+	Posed defaultPose3;
+	double maxReach;
+	double grabForce;
+	double grabForce0;
+	double grabForce1;
+	double grabForce2;
 
 	double vibBuffer[1000];
 	int count;  //used to fill the buffer of the force graph
@@ -80,6 +97,9 @@ public: //Local Properties
 
 	void resetObjects();  //resets the objects position
 	bool displayGraphFlag;  //flag to display the force sensor graph
+
+	//BINOD objects
+	DRUARTMotorDriverIf* uartMotorDriver;
 };
 
 #endif
