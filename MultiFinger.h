@@ -35,7 +35,7 @@ public: //Local Properties
 		XBOX,
 		FALCON,
 	} humanInterface;
-	
+
 	FingerGrip grip;
 	HISpidarGIf* spidar;
 	PHSceneIf* phscene;

@@ -56,7 +56,7 @@ void MultiFinger::BuildScene(){
 	phscene->SetTimeStep(pdt);
 
 	fwscene = GetSdk()->GetScene(i);
-	fwscene->EnableRenderAxis();
+	//fwscene->EnableRenderAxis();
 
 	grip.Build(fwscene);
 
@@ -360,16 +360,11 @@ void MultiFinger::InitHapticInterface(){
 
 void MultiFinger::InitCameraView(){
 
-	Vec3d pos = Vec3d(0, -0.4, -0.5);
+	Vec3d pos = Vec3d(0, 0.02, 0.2);
 	GetCurrentWin()->GetTrackball()->SetPosition(pos);
 	Affinef af;
 	af.Pos() = pos;
-	af.LookAt(Vec3f(0, 0, 0), Vec3f(0, 1, 0));
-	Quaterniond ori;
-	ori.FromMatrix(af.Rot());
-	GetCurrentWin()->GetTrackball()->SetOrientation(ori);
-
-	Vec3d target = Vec3d(0.0, 0.05, -0.1);	 //focused on the tochdown zone
+	Vec3d target = Vec3d(0.0, 0.05, 0);	 //focused on the tochdown zone
 	GetCurrentWin()->GetTrackball()->SetTarget(target);	// ƒJƒƒ‰‰ŠúˆÊ’u‚ÌÝ’è
 }
 
@@ -418,48 +413,39 @@ void MultiFinger::TimerFunc(int id){
 			}
 			cycle++;
 		}
+		UTAutoLock LOCK(displayLock);
 
 		phscene->Step();  //springhead physics step
 		
-		//	TODO remove debug code and set spidar's info
-		//	grip.Step(spidar->GetPose(), phscene->GetTimeStep());	//	this will be actual code.
-		//*	//	debug codes:
-		grip.Step(Posed::Trn(0, 0.2, 0), phscene->GetTimeStep());
-		/*/
-		static int count = 0;
-		count++;
-		if (count < 100) {
-			grip.Step(Posed::Trn(0, 0.2, 0), phscene->GetTimeStep());
-		}
-		else {
-			Posed pose = Posed::Trn(0, 0.2 - 0.0001 * (count - 100), 0);
-			pose.Ori() = Quaterniond::Rot(Rad(min(90, count-100)), 'x');
-			grip.Step(pose, phscene->GetTimeStep());
-		}
-		//	*/
+		Posed pose = spidar->GetPose();
+		pose.Pos() = pose.Pos()*4;
+		pose.PosY() += 0.05;
+		grip.Step(pose, phscene->GetTimeStep());	//	this will be actual code.
 
-		DSTR << "CouplingForce: ";
 		Vec3d totalForce, totalTorque;
 		for (Finger& finger : grip.fingers) {
-			if(finger.GetIndex() < 2) finger.AddForce(1);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
+			if(finger.GetIndex() < 0) finger.AddForce(-1);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
 			Vec6d couplingForce = finger.spring->GetMotorForce();
-			finger.AddForce(-couplingForce[0]);
-			//	TODO use couplingForce to feedback force to spidar
-			//spidar->SetForce(Fc, 0);	//must be called
-			DSTR << couplingForce << ", ";
-
-			Vec3d p = finger.position + finger.length * finger.direction;
-			Vec3d f = couplingForce.sub_vector(0, Vec3d());
-			Vec3d t = couplingForce.sub_vector(3, Vec3d());
+			//DSTR << "c" << finger.GetIndex() << " f=" << couplingForce << std::endl;
+			//	finger.AddForce(couplingForce[0]);
+			Posed socketPose;
+			finger.spring->GetSocketPose(socketPose);
+			Quaterniond ori = grip.gripDevice->GetOrientation() * socketPose.Ori();
+			//	all in global coordinates:
+			Vec3d p = grip.gripDevice->GetOrientation() * (finger.position + finger.length * finger.direction);
+			Vec3d f = ori * couplingForce.sub_vector(0, Vec3d());
+			Vec3d t = ori * couplingForce.sub_vector(3, Vec3d());
 			totalForce += f;
-			totalTorque += t +  p % f;
+			//totalTorque += t + (p % f);
+			totalTorque += (p % f);
 		}
-		DSTR << std::endl;
-		DSTR << "Total = f:" << totalForce << " t:" << totalTorque << std::endl;
+		double fs = 0.3, ts = 1;
+		spidar->SetForce(-fs*totalForce, -ts*totalTorque);
+		//DSTR << "Total = f:" << totalForce << " t:" << totalTorque << std::endl;
 
 		//	Following two lines fixs the tool[0] to see coupling force for debugging.
-		grip.fingers[0].tool->SetFramePosition(Vec3d(0.05, 0.2, 0));
-		grip.fingers[0].tool->SetVelocity(Vec3d(0, 0, 0));
+		//	grip.fingers[0].tool->SetFramePosition(Vec3d(0.05, 0.2, 0));
+		//	grip.fingers[0].tool->SetVelocity(Vec3d(0, 0, 0));
 
 		//	show current and target position of slider joint 0.
 /*		for (int i = 0; i<grip.fingers.size(); ++i) {

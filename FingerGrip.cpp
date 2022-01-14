@@ -24,16 +24,16 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	tool->SetGravity(false);
 	tool->SetFramePosition(gripDevice->GetPose() * (position + length*direction));
 
-	deviceOrientation.RotationArc(Vec3d(0, 0, 1), direction);
+	deviceOrientation.RotationArc(Vec3d(1, 0, 0), direction);
 	PHSpringDesc sprDesc;
-	sprDesc.posePlug.Ori() = deviceOrientation;
-	sprDesc.posePlug.Pos() = position + length * direction;
 	sprDesc.poseSocket.Ori() = deviceOrientation;
-	sprDesc.spring = 1000 * Vec3d(1, 1, 1);	//	1N/mm = 1000N/m
-	sprDesc.damper = sprDesc.spring * 0.1;
+	sprDesc.poseSocket.Pos() = position + length * direction;
+	sprDesc.posePlug.Ori() = deviceOrientation;
+	sprDesc.spring = 500 * Vec3d(1, 1, 1);	//	0.5N/mm = 500N/m
+	sprDesc.damper = sprDesc.spring * 0.01;
 	sprDesc.springOri = sprDesc.spring[0];
 	sprDesc.damperOri = sprDesc.damper[0];
-	spring = phScene->CreateJoint(tool, gripDevice, sprDesc)->Cast();
+	spring = phScene->CreateJoint(gripDevice, tool, sprDesc)->Cast();
 }
 
 
