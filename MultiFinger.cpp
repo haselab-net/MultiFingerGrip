@@ -424,8 +424,10 @@ void MultiFinger::TimerFunc(int id){
 		phscene->Step();  //springhead physics step
 		
 		//	TODO remove debug code and set spidar's info
+		//	grip.Step(spidar->GetPose(), phscene->GetTimeStep());	//	this will be actual code.
+		//*	//	debug codes:
 		grip.Step(Posed::Trn(0, 0.2, 0), phscene->GetTimeStep());
-/*
+		/*/
 		static int count = 0;
 		count++;
 		if (count < 100) {
@@ -433,27 +435,37 @@ void MultiFinger::TimerFunc(int id){
 		}
 		else {
 			Posed pose = Posed::Trn(0, 0.2 - 0.0001 * (count - 100), 0);
-			pose.Ori() = Quaterniond::Rot(Rad(90), 'x');
+			pose.Ori() = Quaterniond::Rot(Rad(min(90, count-100)), 'x');
 			grip.Step(pose, phscene->GetTimeStep());
 		}
-		*/
-		//	grip.Step(spidar->GetPose(), phscene->GetTimeStep());	//	this will be actual code.
+		//	*/
 
 		DSTR << "CouplingForce: ";
-
+		Vec3d totalForce, totalTorque;
 		for (Finger& finger : grip.fingers) {
-			if(finger.GetIndex() < 3) finger.AddForce(1);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
-			double couplingForce = finger.slider->GetMotorForce();
-			finger.AddForce(-couplingForce);
+			if(finger.GetIndex() < 2) finger.AddForce(1);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
+			Vec6d couplingForce = finger.spring->GetMotorForce();
+			finger.AddForce(-couplingForce[0]);
 			//	TODO use couplingForce to feedback force to spidar
 			//spidar->SetForce();	//must be called
 			DSTR << couplingForce << ", ";
+
+			Vec3d p = finger.position + finger.length * finger.direction;
+			Vec3d f = couplingForce.sub_vector(0, Vec3d());
+			Vec3d t = couplingForce.sub_vector(3, Vec3d());
+			totalForce += f;
+			totalTorque += t +  p % f;
 		}
 		DSTR << std::endl;
+<<<<<<< HEAD
 		
+=======
+		DSTR << "Total = f:" << totalForce << " t:" << totalTorque << std::endl;
+
+>>>>>>> 49a59187983e8458c26edb87d8587fedbfa67503
 		//	Following two lines fixs the tool[0] to see coupling force for debugging.
-		//	grip.fingers[0].tool->SetFramePosition(Vec3d(0.05, 0.2, 0));
-		//	grip.fingers[0].tool->SetVelocity(Vec3d(0, 0, 0));
+		grip.fingers[0].tool->SetFramePosition(Vec3d(0.05, 0.2, 0));
+		grip.fingers[0].tool->SetVelocity(Vec3d(0, 0, 0));
 
 		//	show current and target position of slider joint 0.
 /*		for (int i = 0; i<grip.fingers.size(); ++i) {
@@ -461,15 +473,20 @@ void MultiFinger::TimerFunc(int id){
 				<< " target:" << grip.fingers[i].slider->GetTargetPosition()
 				<< " length:" << grip.fingers[i].length << std::endl;
 		}*/
+<<<<<<< HEAD
 		
 		
 			
+=======
+		/*
+>>>>>>> 49a59187983e8458c26edb87d8587fedbfa67503
 		for (Finger& finger : grip.fingers) {
 			Vec3d f, t;
 			finger.slider->GetConstraintForce(f, t);
 			DSTR << "Slider" << finger.GetIndex() << " vel:" << finger.tool->GetVelocity() << finger.tool->GetAngularVelocity() << std::endl;
 			DSTR << " pos:" << finger.tool->GetCenterPosition() << finger.tool->GetOrientation().RotationHalf() << " f:" << f << " t:" << t << std::endl;
 		}
+		*/
 
 		spidar->Update(pdt);  //updates the forces displayed in SPIDAR
 		Vec3f spidarForce;
