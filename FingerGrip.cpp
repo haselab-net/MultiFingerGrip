@@ -39,12 +39,12 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 
 
 FingerGrip::FingerGrip() {
-	fingers.resize(3);
+	fingers.resize(2);
 	for (int i = 0; i < fingers.size(); ++i) {
 		Finger& finger = fingers[i];
 		finger.index = i;
-		finger.direction = Quaterniond::Rot(Rad(180), 'z') * Quaterniond::Rot(Rad(120 * i), 'z') * Vec3d(1, 0, 0);
-		finger.position = Quaterniond::Rot(Rad(120 * i), 'z') * Vec3d(finger.maxLength, 0, 0);
+		finger.direction = Quaterniond::Rot(Rad(180), 'z') * Quaterniond::Rot(Rad(180 * i), 'z') * Vec3d(1, 0, 0);
+		finger.position = Quaterniond::Rot(Rad(180 * i), 'z') * Vec3d(finger.maxLength, 0, 0);
 	}
 }
 void FingerGrip::Build(FWSceneIf* fwScene) {

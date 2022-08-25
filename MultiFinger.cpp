@@ -195,6 +195,7 @@ void MultiFinger::InitHapticInterface(){
 		spidar = hiSdk->CreateHumanInterface(HISpidarGIf::GetIfInfoStatic())->Cast();
 		if (bFoundCy) {
 			spidar->Init(&HISpidarGDesc("SpidarG6X3R")); //Original SPIDARG6
+			flexiforce = hiSdk->RentVirtualDevice(DVAdIf::GetIfInfoStatic(), "", 3)->Cast(); // ˆ³—ÍƒZƒ“ƒT
 			std::cout << "Init SpidarG6X3R" << std::endl;
 		}
 		else {
@@ -420,11 +421,23 @@ void MultiFinger::TimerFunc(int id){
 		Posed pose = spidar->GetPose();
 		pose.Pos() = pose.Pos()*4;
 		pose.PosY() += 0.05;
+		if (flexiforce) {
+			static int c = 0;
+			c++;
+			// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
+			float volts = flexiforce->Voltage();
+			double offset = 1.0; // grabForce == 0 ‚Æ‚È‚éˆÊ’u‚ð‚¸‚ç‚·
+			grabForce = (volts * -2.4914 + 4.4105) - offset;
+			if (c % 1000 == 0) {
+				DSTR << "grabforce: " << grabForce << std::endl;
+			}
+		}
 		grip.Step(pose, phscene->GetTimeStep());	//	this will be actual code.
 
 		Vec3d totalForce, totalTorque;
 		for (Finger& finger : grip.fingers) {
-			if(finger.GetIndex() < 0) finger.AddForce(-1);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
+
+			finger.AddForce(grabForce);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
 			Vec6d couplingForce = finger.spring->GetMotorForce();
 			//DSTR << "c" << finger.GetIndex() << " f=" << couplingForce << std::endl;
 			//	finger.AddForce(couplingForce[0]);
@@ -440,7 +453,12 @@ void MultiFinger::TimerFunc(int id){
 			totalTorque += (p % f);
 		}
 		double fs = 0.3, ts = 1;
-		spidar->SetForce(-fs*totalForce, -ts*totalTorque);
+		if (bForceFeedback) {
+			spidar->SetForce(-fs * totalForce, -ts * totalTorque);
+		}
+		else {
+			spidar->SetForce(Vec3d(), Vec3d());
+		}
 		//DSTR << "Total = f:" << totalForce << " t:" << totalTorque << std::endl;
 
 		//	Following two lines fixs the tool[0] to see coupling force for debugging.
@@ -463,7 +481,6 @@ void MultiFinger::TimerFunc(int id){
 		*/
 
 		spidar->Update(pdt);  //updates the forces displayed in SPIDAR
-		
 		//MultiFingerStep(&spidarForce);  //This function computes the lineal and rotational couplings value
 		//spidar->SetForce(-spidarForce);  //This function set the force 
 		
@@ -543,6 +560,17 @@ void MultiFinger::Keyboard(int key, int x, int y){
 			
 		}
 			break;
+		case 'f':
+			bForceFeedback = !bForceFeedback;
+			DSTR << "ForceFeedback: ";
+			if (bForceFeedback)
+			{
+				DSTR << "ON\n";
+			}
+			else
+			{
+				DSTR << "OFF\n";
+			}
 	}
 	
 	ptimer->Start();
