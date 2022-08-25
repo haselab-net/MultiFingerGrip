@@ -19,15 +19,15 @@ FWScene fwScene
 	
 	FWObject fwTool0{
 		*soTool0		// PHSolid
-		*grMeshii	    // GRFrame
+		*grMeshTool0	    // GRFrame
 	}	
 	FWObject fwTool1{
 		*soTool1		// PHSolid
-		*grMeshii	    // GRFrame
+		*grMeshTool1	    // GRFrame
 	}
 	FWObject fwTool2{
 		*soTool2		// PHSolid
-		*grMeshii	    // GRFrame
+		*grMeshTool2	    // GRFrame
 	}
 	FWObject fwJenga1{
 		*soJenga1		// PHSolid
@@ -156,8 +156,9 @@ FWScene fwScene
 			*table
 		}
 				
-		GRFrame grMeshii { *phPointerCube }
-		GRFrame grMeshiii { *phPointerCube }
+		GRFrame grMeshTool0 { *phPointerCube }
+		GRFrame grMeshTool1 { *phPointerCube }
+		GRFrame grMeshTool2 { *phPointerCube }
 		GRFrame grJenga1 { *phjenga }
 		GRFrame grPhone { *iphone4 }
 		GRFrame grHammer { 
