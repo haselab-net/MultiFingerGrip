@@ -420,7 +420,7 @@ void MultiFinger::TimerFunc(int id){
 		
 		Posed pose = spidar->GetPose();
 		pose.Pos() = pose.Pos()*4;
-		pose.PosY() += 0.05;
+		pose.PosY() += 0.07;
 		if (flexiforce) {
 			static int c = 0;
 			c++;
