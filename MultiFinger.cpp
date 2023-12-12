@@ -118,8 +118,8 @@ void MultiFinger::BuildScene(){
 	fJenga1 = phscene->FindObject("soJenga1")->Cast();
 	fJenga1->GetShape(0)->SetDensity(357.142f);  //non specific value try and error
 	fJenga1->CompInertia();
-	fJenga1->GetShape(0)->SetStaticFriction(0.7f);
-	fJenga1->GetShape(0)->SetDynamicFriction(0.7f);
+	fJenga1->GetShape(0)->SetStaticFriction(1);
+	fJenga1->GetShape(0)->SetDynamicFriction(100);
 	//DSTR << "jenga mass: " << fJenga1->GetMass() << std::endl;  //debug
 	//DSTR << "jenga volume: " << fJenga1->GetShape(0)->CalcVolume() << std::endl;  //debug
 
@@ -159,10 +159,17 @@ void MultiFinger::BuildScene(){
 
 	//aluminium block  mass and density  64cm^3 * iron density (7.87gr) = 200
 	fAluminio = phscene->FindObject("soAluminio")->Cast();
-	fAluminio->GetShape(0)->SetDensity(1355);  //non specific value try and error
+	fAluminio->GetShape(0)->SetDensity(1355 / 1);  //non specific value try and error
 	fAluminio->CompInertia();
-	fAluminio->GetShape(0)->SetStaticFriction(0.7f);
-	fAluminio->GetShape(0)->SetDynamicFriction(0.7f);
+	fAluminio->GetShape(0)->SetStaticFriction(0.0f);
+	fAluminio->GetShape(0)->SetDynamicFriction(0.1f);
+
+	fAluminio1 = phscene->FindObject("soAluminioLight")->Cast();
+	fAluminio1->GetShape(0)->SetDensity(1355 / 2);  //non specific value try and error
+	fAluminio1->CompInertia();
+	fAluminio1->GetShape(0)->SetStaticFriction(0.0f);
+	fAluminio1->GetShape(0)->SetDynamicFriction(0.1f);
+
 	DSTR << "aluminio vol: " << fAluminio->GetShape(0)->CalcVolume() << std::endl;  //debug
 	DSTR << "aluminio mass: " << fAluminio->GetMass() << std::endl;   //debug
 

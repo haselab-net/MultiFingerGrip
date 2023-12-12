@@ -23,6 +23,8 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	}
 	tool->SetGravity(false);
 	tool->SetFramePosition(gripDevice->GetPose() * (position + length*direction));
+	tool->GetShape(0)->SetStaticFriction(1);
+	tool->GetShape(0)->SetDynamicFriction(1);
 
 	deviceOrientation.RotationArc(Vec3d(1, 0, 0), direction);
 	PHSpringDesc sprDesc;

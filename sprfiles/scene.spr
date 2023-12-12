@@ -139,12 +139,22 @@ FWScene fwScene
 		}
 		
 		PHSolid soAluminio{		
-			mass = 10.0
+			mass = 1.0
 			pose = 0.707107 0 0.707107 0 0.0 0.0305 -0.1
 			dynamical = true
 			PHFrame{
 				CDBox cdAluminio{
-				boxsize = 0.040 0.040 0.040 
+				boxsize = 0.060 0.060 0.060 
+				}
+			}
+		}
+		PHSolid soAluminioLight{		
+			mass = 1.0
+			pose = 0.707107 0 0.707107 0 0.1 0.0305 -0.1
+			dynamical = true
+			PHFrame{
+				CDBox cdAluminio{
+				boxsize = 0.060 0.060 0.060 
 				}
 			}
 		}
