@@ -1,4 +1,37 @@
-﻿  FingerGrip.cpp
+﻿  MultiFinger.cpp
+  main.cpp
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(32,25): warning C4996: 'localtime': This function or variable may be unsafe. Consider using localtime_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(144,43): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(424,26): warning C4244: 'argument': conversion from 'double' to '_Ty', possible loss of data
+          with
+          [
+              _Ty=float
+          ]
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(454,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(456,17): warning C4305: '=': truncation from 'double' to 'float'
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(510,23): warning C4244: 'argument': conversion from 'double' to '_Ty', possible loss of data
+          with
+          [
+              _Ty=float
+          ]
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(511,50): warning C4244: 'argument': conversion from 'T' to '_Ty', possible loss of data
+          with
+          [
+              T=double
+          ]
+          and
+          [
+              _Ty=float
+          ]
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(513,33): warning C4244: 'argument': conversion from 'T' to '_Ty', possible loss of data
+          with
+          [
+              T=double
+          ]
+          and
+          [
+              _Ty=float
+          ]
 clapack15.0x64.lib(dgesdd.obj) : warning LNK4099: PDB '' was not found with 'clapack15.0x64.lib(dgesdd.obj)' or at ''; linking object as if no debug info
 clapack15.0x64.lib(dgesv.obj) : warning LNK4099: PDB '' was not found with 'clapack15.0x64.lib(dgesv.obj)' or at ''; linking object as if no debug info
 clapack15.0x64.lib(dgeqrf.obj) : warning LNK4099: PDB '' was not found with 'clapack15.0x64.lib(dgeqrf.obj)' or at ''; linking object as if no debug info

@@ -88,73 +88,73 @@ FWScene fwScene
 		}
 
 		/* Tool 2 */
-		PHSolid soTool2{
-			mass = 0.01
-			pose = 1 0 0 0 0.05 0.15 0.0
-			dynamical = true
-			PHFrame{
-				CDBox cdTool2{
-				boxsize = 0.012 0.012 0.012 
-				}
-			}
-		}
+		//PHSolid soTool2{
+		//	mass = 0.01
+		//	pose = 1 0 0 0 0.05 0.15 0.0
+		//	dynamical = true
+		//	PHFrame{
+		//		CDBox cdTool2{
+		//		boxsize = 0.012 0.012 0.012 
+		//		}
+		//	}
+		//}
 		
-		PHSolid soJenga1{		
-			mass = 10.0
-			pose = 0.707107 0 0.707107 0 -0.121 0.020 0.1
-			dynamical = true
-			PHFrame{
-				CDBox cdJenga1{
-				boxsize = 0.070 0.020 0.020 
-				}
-			}
-		}
+		//PHSolid soJenga1{		
+		//	mass = 10.0
+		//	pose = 0.707107 0 0.707107 0 -0.121 0.020 0.1
+		//	dynamical = true
+		//	PHFrame{
+		//		CDBox cdJenga1{
+		//		boxsize = 0.070 0.020 0.020 
+		//		}
+		//	}
+		//}
 		
-		PHSolid soPhone{		
-			mass = 1.0
-			pose = 0.70709 -0.00178529 0.70712 0.001727 0.0 0.039 0.10
-			dynamical = true
-			PHFrame{
-				CDBox cdPhone{
-				boxsize = 0.115 0.0586 0.015
-				}
-			}
-		}
+		//PHSolid soPhone{		
+		//	mass = 1.0
+		//	pose = 0.70709 -0.00178529 0.70712 0.001727 0.0 0.039 0.10
+		//	dynamical = true
+		//	PHFrame{
+		//		CDBox cdPhone{
+		//		boxsize = 0.115 0.0586 0.015
+		//		}
+		//	}
+		//}
 		
-		PHSolid soHammer{		
-			mass = 1.0
-			pose = 1 0 0 0 0.1 0.0327 0.10
-			dynamical = true
-			PHFrame{ 
-				CDBox cdHammerStick{
-				boxsize = 0.020 0.020 0.15 
-				}
-			}
-			PHFrame{ 
-				pose = 1 0 0 0 0.0 0.0 -0.065
-				CDBox cdHammerHead{
-				boxsize = 0.02793 0.0621 0.02883
-				}
-			}
-		}
+		//PHSolid soHammer{		
+		//	mass = 1.0
+		//	pose = 1 0 0 0 0.1 0.0327 0.10
+		//	dynamical = true
+		//	PHFrame{ 
+		//		CDBox cdHammerStick{
+		//		boxsize = 0.020 0.020 0.15 
+		//		}
+		//	}
+		//	PHFrame{ 
+		//		pose = 1 0 0 0 0.0 0.0 -0.065
+		//		CDBox cdHammerHead{
+		//		boxsize = 0.02793 0.0621 0.02883
+		//		}
+		//	}
+		//}
 		
-		PHSolid soAluminio{		
-			mass = 1.0
-			pose = 0.707107 0 0.707107 0 0.0 0.0305 -0.1
-			dynamical = true
-			PHFrame{
-				CDBox cdAluminio{
-				boxsize = 0.060 0.060 0.060 
-				}
-			}
-		}
+		//PHSolid soAluminio{		
+		//	mass = 1.0
+		//	pose = 0.707107 0 0.707107 0 0.0 0.0305 -0.1
+		//	dynamical = true
+		//	PHFrame{
+		//		CDBox cdAluminio{
+		//		boxsize = 0.045 0.045 0.045 
+		//		}
+		//	}
+		//}
 		PHSolid soAluminioLight{		
 			mass = 1.0
-			pose = 0.707107 0 0.707107 0 0.1 0.0305 -0.1
+			pose = 0.707107 0 0.707107 0 0.0 0.039 0.00
 			dynamical = true
 			PHFrame{
 				CDBox cdAluminio{
-				boxsize = 0.060 0.060 0.060 
+				boxsize = 0.045 0.045 0.045 
 				}
 			}
 		}

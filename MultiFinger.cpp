@@ -24,7 +24,36 @@ MultiFinger::MultiFinger(){
 }
 
 //main function of the class
+
+std::string getCurrentTimestamp() {
+	auto now = std::chrono::system_clock::now();
+	auto now_c = std::chrono::system_clock::to_time_t(now);
+
+	std::tm now_tm = *std::localtime(&now_c);
+	std::ostringstream oss;
+	oss << std::put_time(&now_tm, "%Y-%m-%d_%H-%M-%S");
+	return oss.str();
+}
+
+int userNum;
+int xh;
+int md = 2;
+std::string csvFilename;
+std::vector<float> csvData;
+
 void MultiFinger::Init(int argc, char* argv[]){
+
+	std::cout << "userNum: ";
+	std::cin >> userNum;
+
+	std::cout << "xh: ";
+	std::cin >> xh;// experiment number
+
+	std::cout << "md: ";
+	std::cin >> md; // density
+
+	csvFilename = std::to_string(userNum) + "_" + std::to_string(xh) + "_" + std::to_string(md) + "_" + getCurrentTimestamp() + ".csv";
+
 	FWApp::Init(argc, argv);
 
 	InitCameraView();
@@ -54,6 +83,7 @@ void MultiFinger::BuildScene(){
 	i = GetSdk()->NScene() - 1;
 	phscene = GetSdk()->GetScene(i)->GetPHScene();
 	phscene->SetTimeStep(pdt);
+	phscene->SetNumIteration(100);
 
 	fwscene = GetSdk()->GetScene(i);
 	//fwscene->EnableRenderAxis();
@@ -73,105 +103,51 @@ void MultiFinger::BuildScene(){
 	this->nsolids = phscene->NSolids();
 	DSTR << "Nsolids: " << nsolids << std::endl;  //DEBUG
 	PHSolidIf **solidspnt = phscene->GetSolids();
-	/*
-	//set the objects that are going to be the Tools (BINOD)
-	fTool0 = phscene->FindObject("soTool0")->Cast();
-	fTool1 = phscene->FindObject("soTool1")->Cast();
-	fTool2 = phscene->FindObject("soTool2")->Cast();
-
-	defaultCenterPose.Pos() = Vec3d(0.0, 0.15, 0.0);
-
-	defaultPose1.Pos() = Vec3d(maxReach, 0.15, 0.0);
-	fTool0->SetMass(0.010);
-	fTool0->SetInertia(fTool0->GetShape(0)->CalcMomentOfInertia() * (float)(fTool0->GetMass() / fTool0->GetShape(0)->CalcVolume()));	// 慣性テンソルの設定
-
-	defaultPose2.Pos() = Vec3d(maxReach, -0.15, 0.0);
-	fTool1->SetMass(0.010);  //0.0005 original value
-	fTool1->SetInertia(fTool1->GetShape(0)->CalcMomentOfInertia() * (float)(fTool1->GetMass() / fTool1->GetShape(0)->CalcVolume()));	// 慣性テンソルの設定
-	
-	//Default pose for pointer 3
-	defaultPose3.Pos() = Vec3d(-maxReach, -0.15, 0.0);
-	fTool2->SetMass(0.010);  //0.0005 original value
-	fTool2->SetInertia(fTool2->GetShape(0)->CalcMomentOfInertia() * (float)(fTool2->GetMass() / fTool2->GetShape(0)->CalcVolume()));	// 慣性テンソルの設定
-	fTool0->SetGravity(false);
-	fTool1->SetGravity(false);
-	fTool2->SetGravity(false);
-	*/
-	//Used to locate the object in the right orientation, from Euler angles
-	//Quaterniond qq;
-	//qq.FromEuler(Vec3f(Radf(0.0f) , 0.0f, Radf(90.0f)));
-	//Posed pp = Posed(Vec3d(0,0,0), qq);
-	//DSTR << pp.OriW() << "," << pp.OriX() << "," << pp.OriY() << "," << pp.OriZ() << std::endl;
 
 	PHSolidIf *floor = phscene->FindObject("soCube")->Cast();
-	/*fTool0->GetShape(0)->SetStaticFriction(1000.0f);
-	fTool1->GetShape(0)->SetStaticFriction(1000.0f);
-	fTool2->GetShape(0)->SetStaticFriction(1000.0f);
-	fTool0->GetShape(0)->SetDynamicFriction(1000.0f);
-	fTool1->GetShape(0)->SetDynamicFriction(1000.0f);
-	fTool2->GetShape(0)->SetDynamicFriction(1000.0f);
-	*/
-	floor->GetShape(0)->SetStaticFriction(0.4f);
+
+	floor->GetShape(0)->SetStaticFriction(0.0f);
 	
 	
-	//define jenga object properties
-	fJenga1 = phscene->FindObject("soJenga1")->Cast();
-	fJenga1->GetShape(0)->SetDensity(357.142f);  //non specific value try and error
-	fJenga1->CompInertia();
-	fJenga1->GetShape(0)->SetStaticFriction(1);
-	fJenga1->GetShape(0)->SetDynamicFriction(100);
-	//DSTR << "jenga mass: " << fJenga1->GetMass() << std::endl;  //debug
-	//DSTR << "jenga volume: " << fJenga1->GetShape(0)->CalcVolume() << std::endl;  //debug
+	////define jenga object properties
+	//fJenga1 = phscene->FindObject("soJenga1")->Cast();
+	//fJenga1->GetShape(0)->SetDensity(357.142f);  //non specific value try and error
+	//fJenga1->CompInertia();
+	//fJenga1->GetShape(0)->SetStaticFriction(0.7f);
+	//fJenga1->GetShape(0)->SetDynamicFriction(0.7f);
 
-	//fJenga2 = phscene->FindObject("soJenga2")->Cast();
-	//fJenga2->GetShape(0)->SetDensity(357.142);  //non specific value try and error
-	//fJenga2->CompInertia();
-	//fJenga2->GetShape(0)->SetStaticFriction(0.7);
-	//fJenga2->GetShape(0)->SetDynamicFriction(0.7);
+	//fPhone = phscene->FindObject("soPhone")->Cast();
+	//fPhone->GetShape(0)->SetDensity(677);  // non specific value try and error
+	//fPhone->CompInertia();
+	//fPhone->GetShape(0)->SetStaticFriction(0.7f);
+	//fPhone->GetShape(0)->SetDynamicFriction(0.7f);
+	//DSTR << "phone mass: " << fPhone->GetMass() << std::endl;  //debug
+	//DSTR << "phone volume" << fPhone->GetShape(0)->CalcVolume() << std::endl;  //debug
+	//
+	////defining the hammer density and mass
+	//fHammer = phscene->FindObject("soHammer")->Cast();
+	//fHammer->GetShape(0)->SetDensity(1500); //non specific value try and error  1012.25
+	//fHammer->GetShape(1)->SetDensity(244.90f);  //non specific value try and error
+	//fHammer->GetShape(0)->SetStaticFriction(0.70f);
+	//fHammer->GetShape(0)->SetDynamicFriction(0.7f);
+	//fHammer->GetShape(1)->SetStaticFriction(0.7f);
+	//fHammer->GetShape(1)->SetDynamicFriction(0.7f);
+	//fHammer->CompInertia();
 
-	//fJenga3 = phscene->FindObject("soJenga3")->Cast();
-	//fJenga3->GetShape(0)->SetDensity(357.142); //non specific value try and error
-	//fJenga3->CompInertia();
-	//fJenga3->GetShape(0)->SetStaticFriction(0.7);
-	//fJenga3->GetShape(0)->SetDynamicFriction(0.7);
-
-	//defining the cellphone density and mass
-	fPhone = phscene->FindObject("soPhone")->Cast();
-	fPhone->GetShape(0)->SetDensity(677);  // non specific value try and error
-	fPhone->CompInertia();
-	fPhone->GetShape(0)->SetStaticFriction(0.7f);
-	fPhone->GetShape(0)->SetDynamicFriction(0.7f);
-	DSTR << "phone mass: " << fPhone->GetMass() << std::endl;  //debug
-	DSTR << "phone volume" << fPhone->GetShape(0)->CalcVolume() << std::endl;  //debug
-	
-	//defining the hammer density and mass
-	fHammer = phscene->FindObject("soHammer")->Cast();
-	fHammer->GetShape(0)->SetDensity(1500); //non specific value try and error  1012.25
-	fHammer->GetShape(1)->SetDensity(244.90f);  //non specific value try and error
-	fHammer->GetShape(0)->SetStaticFriction(0.70f);
-	fHammer->GetShape(0)->SetDynamicFriction(0.7f);
-	fHammer->GetShape(1)->SetStaticFriction(0.7f);
-	fHammer->GetShape(1)->SetDynamicFriction(0.7f);
-	fHammer->CompInertia();
-	//DSTR << "hammer mass: " << fHammer->GetMass() << std::endl;  //debug
-	//DSTR << "head volume: " << fHammer->GetShape(0)->CalcVolume() << std::endl;  //debug
-	//DSTR << "stick volume: " << fHammer->GetShape(1)->CalcVolume() << std::endl; //debug 
-
-	//aluminium block  mass and density  64cm^3 * iron density (7.87gr) = 200
-	fAluminio = phscene->FindObject("soAluminio")->Cast();
-	fAluminio->GetShape(0)->SetDensity(1355 / 1);  //non specific value try and error
-	fAluminio->CompInertia();
-	fAluminio->GetShape(0)->SetStaticFriction(0.0f);
-	fAluminio->GetShape(0)->SetDynamicFriction(0.1f);
+	//fAluminio = phscene->FindObject("soAluminio")->Cast();
+	//fAluminio->GetShape(0)->SetDensity(4000 / 2);  //non specific value try and error
+	//fAluminio->CompInertia();
+	//fAluminio->GetShape(0)->SetStaticFriction(0.2f);
+	//fAluminio->GetShape(0)->SetDynamicFriction(100.1f);
 
 	fAluminio1 = phscene->FindObject("soAluminioLight")->Cast();
-	fAluminio1->GetShape(0)->SetDensity(1355 / 2);  //non specific value try and error
+	fAluminio1->GetShape(0)->SetDensity(4000 / md);  //non specific value try and error
 	fAluminio1->CompInertia();
-	fAluminio1->GetShape(0)->SetStaticFriction(0.0f);
-	fAluminio1->GetShape(0)->SetDynamicFriction(0.1f);
+	fAluminio1->GetShape(0)->SetStaticFriction(0.2f);
+	fAluminio1->GetShape(0)->SetDynamicFriction(100.0f);
 
-	DSTR << "aluminio vol: " << fAluminio->GetShape(0)->CalcVolume() << std::endl;  //debug
-	DSTR << "aluminio mass: " << fAluminio->GetMass() << std::endl;   //debug
+	//DSTR << "aluminio vol: " << fAluminio->GetShape(0)->CalcVolume() << std::endl;  //debug
+	//DSTR << "aluminio mass: " << fAluminio->GetMass() << std::endl;   //debug
 
 }
 
@@ -403,8 +379,22 @@ void MultiFinger::calibrate() {
 }
 
 //This multimedia thread handles the haptic (6DOF virtual coupling pointers) and physics simulation (Springhead)
+double globalTime = 0;
+double amplitude = 0.8; 
+double frequency = 200.0;
+double decayRate = 200;
+
+std::vector<float> hapticList;
+float lastX, lastY, lastZ;
+
 void MultiFinger::TimerFunc(int id){
 	
+	
+
+
+	
+	globalTime += 0.001;
+
 	//DSTR << "timers id: " << pTimerID << std::endl;
 	if (pTimerID == id){
 		// Count "Cycle Per Second"
@@ -425,6 +415,20 @@ void MultiFinger::TimerFunc(int id){
 
 		phscene->Step();  //springhead physics step
 		
+		static PHSolidIf* prevSolid[100];
+		static bool prevState[100];
+		for (int i = 0; i < phscene->NContacts(); ++i) {
+			PHContactPointIf* cp = phscene->GetContact(i);
+			if (!cp->IsStaticFriction() && prevState[i] && prevSolid[i] == cp->GetSocketSolid()) {
+				DSTR << "S->D " << cp->GetSocketSolid()->GetName() << std::endl;
+				hapticList.push_back(globalTime);
+
+			}
+			prevState[i] = cp->IsStaticFriction();
+			prevSolid[i] = cp->GetSocketSolid();
+		}
+
+
 		Posed pose = spidar->GetPose();
 		pose.Pos() = pose.Pos()*4;
 		pose.PosY() += 0.07;
@@ -433,18 +437,45 @@ void MultiFinger::TimerFunc(int id){
 			c++;
 			// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
 			float volts = flexiforce->Voltage();
-			double offset = 1.0; // grabForce == 0 となる位置をずらす
-			grabForce = (volts * -2.4914 + 4.4105) - offset;
-			if (c % 1000 == 0) {
+			
+			grabForce = (volts * -2.4914 + 4.4105);// -offset;
+
+			if (c % 10 == 0) {
 				DSTR << "grabforce: " << grabForce << std::endl;
 			}
+
 		}
+
+		double value = 0;
+		if (hapticList.size() > 5) {
+			for (float elem : hapticList) {
+
+				double decayFactor = exp(-decayRate * (globalTime - elem));
+				float forceNum = grabForce;
+				if (forceNum < 0.1)
+					forceNum = 0.1;
+				
+				value += forceNum * amplitude * decayFactor * sin(2 * M_PI * frequency * (globalTime - elem));
+
+			}
+			//std::cout << value << std::endl;
+			for (auto it = hapticList.begin(); it != hapticList.end(); /* no increment */) {
+				if (globalTime - *it > 0.2) {
+					it = hapticList.erase(it);
+				}
+				else {
+					++it;
+				}
+			}
+		}
+		
+
 		grip.Step(pose, phscene->GetTimeStep());	//	this will be actual code.
 
 		Vec3d totalForce, totalTorque;
 		for (Finger& finger : grip.fingers) {
-
-			finger.AddForce(grabForce);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
+			double offset = 0.2; // grabForce == 0 となる位置をずらす
+			finger.AddForce((grabForce - offset) / 4);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
 			Vec6d couplingForce = finger.spring->GetMotorForce();
 			//DSTR << "c" << finger.GetIndex() << " f=" << couplingForce << std::endl;
 			//	finger.AddForce(couplingForce[0]);
@@ -455,16 +486,52 @@ void MultiFinger::TimerFunc(int id){
 			Vec3d p = grip.gripDevice->GetOrientation() * (finger.position + finger.length * finger.direction);
 			Vec3d f = ori * couplingForce.sub_vector(0, Vec3d());
 			Vec3d t = ori * couplingForce.sub_vector(3, Vec3d());
-			totalForce += f;
-			//totalTorque += t + (p % f);
-			totalTorque += (p % f);
+			if (xh == 1) { //add tengantial force
+				totalForce += f;
+				totalTorque += (p % f);
+			}
+			
 		}
-		double fs = 0.3, ts = 1;
+		double fs = 1, ts = 2;
+		
+		float vibMax = 1;
+		if (value > vibMax)
+			value = vibMax;
+		if (value < -vibMax)
+			value = -vibMax;
+
+		if(xh != 0) //add vibration except condition 0(nothing
+			totalForce.y += value;
+
 		if (bForceFeedback) {
 			spidar->SetForce(-fs * totalForce, -ts * totalTorque);
+			//std::cout << "x:" << totalForce.x << "y:" << totalForce.y << "z:" << totalForce.z << std::endl;
+			if (userNum != 999) {// if not testing
+				csvData.push_back(grabForce);
+				csvData.push_back(fAluminio1->GetPose().Pos().y);
+
+				csvData.push_back(totalForce.y);
+				//write csv
+				// Open file in append mode
+				std::ofstream file(csvFilename, std::ios::app);
+
+				if (!file.is_open()) {
+					std::cerr << "cannot open csv file" << std::endl;
+					return;
+				}
+
+				for (size_t i = 0; i < csvData.size(); ++i) {
+					file << csvData[i];
+					if (i < csvData.size() - 1) file << ",";
+				}
+				file << "\n";
+				csvData.clear();
+				file.close();
+			}
 		}
 		else {
 			spidar->SetForce(Vec3d(), Vec3d());
+			
 		}
 		//DSTR << "Total = f:" << totalForce << " t:" << totalTorque << std::endl;
 
@@ -640,39 +707,28 @@ void MultiFinger::resetObjects(){
 	Quaterniond qq;
 	Posed ptmp;
 
-	//left jenga
-	fJenga1->SetVelocity(Vec3d());
-	qq.FromEuler(Vec3f(Radf(90.0f), Radf(0.0f), 0.0f));
-	ptmp = Posed(Vec3d(-0.121f, 0.021f, 0.1f), qq);
-	fJenga1->SetPose(ptmp);
-
-	//middle jenga
-	//fJenga2->SetVelocity(Vec3d());
+	////left jenga
+	//fJenga1->SetVelocity(Vec3d());
 	//qq.FromEuler(Vec3f(Radf(90.0f), Radf(0.0f), 0.0f));
-	//ptmp = Posed(Vec3d(-0.1f, 0.021f, 0.1f), qq);
-	//fJenga2->SetPose(ptmp);
+	//ptmp = Posed(Vec3d(-0.121f, 0.021f, 0.1f), qq);
+	//fJenga1->SetPose(ptmp);
 
-	//right jenga
-	//fJenga3->SetVelocity(Vec3d());
+
+	////phone
+	//fPhone->SetVelocity(Vec3d());
 	//qq.FromEuler(Vec3f(Radf(90.0f), Radf(0.0f), 0.0f));
-	//ptmp = Posed(Vec3d(-0.080f, 0.021f, 0.1f), qq);
-	//fJenga3->SetPose(ptmp);
+	//ptmp = Posed(Vec3d(0.0f, 0.045f, 0.1f), qq);
+	//fPhone->SetPose(ptmp);
 
-	//phone
-	fPhone->SetVelocity(Vec3d());
-	qq.FromEuler(Vec3f(Radf(90.0f), Radf(0.0f), 0.0f));
-	ptmp = Posed(Vec3d(0.0f, 0.045f, 0.1f), qq);
-	fPhone->SetPose(ptmp);
-
-	//hammer
-	fHammer->SetVelocity(Vec3d());
-	qq.FromEuler(Vec3f(Radf(0.0f), Radf(180.0f), 0.0f));
-	ptmp = Posed(Vec3d(0.1f, 0.045f, 0.1f), qq);
-	fHammer->SetPose(ptmp);
+	////hammer
+	//fHammer->SetVelocity(Vec3d());
+	//qq.FromEuler(Vec3f(Radf(0.0f), Radf(180.0f), 0.0f));
+	//ptmp = Posed(Vec3d(0.1f, 0.045f, 0.1f), qq);
+	//fHammer->SetPose(ptmp);
 
 	//alumini cube
-	fAluminio->SetVelocity(Vec3d());
+	fAluminio1->SetVelocity(Vec3d());
 	qq.FromEuler(Vec3f(Radf(0.0f), Radf(180.0f), 0.0f));
 	ptmp = Posed(Vec3d(0.0f, 0.025f, -0.1f), qq);
-	fAluminio->SetPose(ptmp);
+	fAluminio1->SetPose(ptmp);
 }

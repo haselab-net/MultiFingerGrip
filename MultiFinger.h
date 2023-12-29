@@ -53,7 +53,7 @@ public: //Local Properties
 	double posScale;  //2.5 orignal value with 20x30 floor scene (Virgilio original)
 	int grabKey;	//	'1' to '9'
 
-	bool bForceFeedback = false;
+	bool bForceFeedback = true;
 
 	MultiFinger();
 	void InitHapticInterface();
