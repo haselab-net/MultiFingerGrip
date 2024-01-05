@@ -4,7 +4,8 @@ void Finger::AddForce(double f) {
 	force += f;
 }
 void Finger::Step(PHSolidIf* soGripTool, double dt) {
-	length += 200 * force * dt;
+	//length += 100 * force * dt;
+	length = force;
 	force = 0;
 	LimitLength();
 
@@ -24,7 +25,7 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	tool->SetGravity(false);
 	tool->SetFramePosition(gripDevice->GetPose() * (position + length*direction));
 	tool->GetShape(0)->SetStaticFriction(0.7);
-	tool->GetShape(0)->SetDynamicFriction(0.5);
+	tool->GetShape(0)->SetDynamicFriction(0.65);
 
 	deviceOrientation.RotationArc(Vec3d(1, 1, 1), direction);
 	PHSpringDesc sprDesc;

@@ -71,7 +71,7 @@ FWScene fwScene
 			dynamical = true
 			PHFrame{
 				CDSphere cdTool0{
-				radius = 0.012
+				radius = 0.007
 				//boxsize = 0.012 0.012 0.012 
 				}
 			}
@@ -84,7 +84,7 @@ FWScene fwScene
 			dynamical = true
 			PHFrame{
 				CDSphere cdTool1{
-				radius = 0.012
+				radius = 0.007
 				//boxsize = 0.012 0.012 0.012 
 				}
 			}

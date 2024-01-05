@@ -83,7 +83,7 @@ void MultiFinger::BuildScene(){
 	i = GetSdk()->NScene() - 1;
 	phscene = GetSdk()->GetScene(i)->GetPHScene();
 	phscene->SetTimeStep(pdt);
-	phscene->SetNumIteration(100);
+	phscene->SetNumIteration(30);
 
 	fwscene = GetSdk()->GetScene(i);
 	//fwscene->EnableRenderAxis();
@@ -145,8 +145,10 @@ void MultiFinger::BuildScene(){
 	fAluminio1 = phscene->FindObject("soAluminioLight")->Cast();
 	fAluminio1->GetShape(0)->SetDensity(4000 / md);  //non specific value try and error
 	fAluminio1->CompInertia();
-	fAluminio1->GetShape(0)->SetStaticFriction(0.1f);
-	fAluminio1->GetShape(0)->SetDynamicFriction(0.09f);
+	fAluminio1->GetShape(0)->SetStaticFriction(0.3f);
+	fAluminio1->GetShape(0)->SetDynamicFriction(0.2f);
+	fAluminio1->GetShape(1)->SetStaticFriction(0.3f);
+	fAluminio1->GetShape(1)->SetDynamicFriction(0.2f);
 
 //	fAluminio1->AddShape(fAluminio->GetShape(0));
 //	fAluminio1->AddChildObject(fAluminio->GetShape(0));
@@ -389,6 +391,9 @@ double amplitude = 4.0;
 double frequency = 200.0;
 double decayRate = 200;
 
+double sinAmplitude = 4.0;
+double sinFrequency = 200.0;
+
 std::vector<float> hapticList;
 float lastX, lastY, lastZ;
 
@@ -422,8 +427,18 @@ void MultiFinger::TimerFunc(int id){
 		
 		static PHSolidIf* prevSolid[100];
 		static bool prevState[100];
+
+		float relativeVel = 0;
 		for (int i = 0; i < phscene->NContacts(); ++i) {
 			PHContactPointIf* cp = phscene->GetContact(i);
+			auto name = cp->GetSocketSolid()->GetName();;
+			if (name[2] == 'T' && name[3] == 'o') { //soTools
+				Vec3d v, w; 
+				cp->GetRelativeVelocity(v, w);
+				relativeVel += v.x + v.y + v.z;
+			}
+			
+			
 			if (!cp->IsStaticFriction() && prevState[i] && prevSolid[i] == cp->GetSocketSolid()) {
 				DSTR << "S->D " << cp->GetSocketSolid()->GetName() << std::endl;
 				hapticList.push_back(globalTime);
@@ -461,6 +476,7 @@ void MultiFinger::TimerFunc(int id){
 					forceNum = 0.1;
 				
 				value += sqrt(forceNum) * amplitude * decayFactor * sin(2 * M_PI * frequency * (globalTime - elem));
+				value += sqrt(forceNum) * relativeVel * sinAmplitude * sin(2 * M_PI * sinFrequency * globalTime);
 
 			}
 			//std::cout << value << std::endl;
