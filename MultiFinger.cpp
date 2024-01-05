@@ -139,12 +139,17 @@ void MultiFinger::BuildScene(){
 	//fAluminio->CompInertia();
 	//fAluminio->GetShape(0)->SetStaticFriction(0.2f);
 	//fAluminio->GetShape(0)->SetDynamicFriction(100.1f);
+	//fAluminio->SetDynamical(0);
+	//fAluminio->SetStationary(0);
 
 	fAluminio1 = phscene->FindObject("soAluminioLight")->Cast();
 	fAluminio1->GetShape(0)->SetDensity(4000 / md);  //non specific value try and error
 	fAluminio1->CompInertia();
-	fAluminio1->GetShape(0)->SetStaticFriction(0.2f);
-	fAluminio1->GetShape(0)->SetDynamicFriction(100.0f);
+	fAluminio1->GetShape(0)->SetStaticFriction(0.1f);
+	fAluminio1->GetShape(0)->SetDynamicFriction(0.09f);
+
+//	fAluminio1->AddShape(fAluminio->GetShape(0));
+//	fAluminio1->AddChildObject(fAluminio->GetShape(0));
 
 	//DSTR << "aluminio vol: " << fAluminio->GetShape(0)->CalcVolume() << std::endl;  //debug
 	//DSTR << "aluminio mass: " << fAluminio->GetMass() << std::endl;   //debug
@@ -380,7 +385,7 @@ void MultiFinger::calibrate() {
 
 //This multimedia thread handles the haptic (6DOF virtual coupling pointers) and physics simulation (Springhead)
 double globalTime = 0;
-double amplitude = 0.8; 
+double amplitude = 4.0; 
 double frequency = 200.0;
 double decayRate = 200;
 
@@ -447,7 +452,7 @@ void MultiFinger::TimerFunc(int id){
 		}
 
 		double value = 0;
-		if (hapticList.size() > 5) {
+		if (hapticList.size() > 0) {
 			for (float elem : hapticList) {
 
 				double decayFactor = exp(-decayRate * (globalTime - elem));
@@ -455,7 +460,7 @@ void MultiFinger::TimerFunc(int id){
 				if (forceNum < 0.1)
 					forceNum = 0.1;
 				
-				value += forceNum * amplitude * decayFactor * sin(2 * M_PI * frequency * (globalTime - elem));
+				value += sqrt(forceNum) * amplitude * decayFactor * sin(2 * M_PI * frequency * (globalTime - elem));
 
 			}
 			//std::cout << value << std::endl;
@@ -474,7 +479,7 @@ void MultiFinger::TimerFunc(int id){
 
 		Vec3d totalForce, totalTorque;
 		for (Finger& finger : grip.fingers) {
-			double offset = 0.2; // grabForce == 0 ‚Æ‚È‚éˆÊ’u‚ð‚¸‚ç‚·
+			double offset = 0.04; // grabForce == 0 ‚Æ‚È‚éˆÊ’u‚ð‚¸‚ç‚·
 			finger.AddForce((grabForce - offset) / 4);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
 			Vec6d couplingForce = finger.spring->GetMotorForce();
 			//DSTR << "c" << finger.GetIndex() << " f=" << couplingForce << std::endl;
@@ -602,6 +607,7 @@ void MultiFinger::Keyboard(int key, int x, int y){
 				DSTR << "GRAPH ENABLED" << std::endl;
 			}
 		}
+			break;
 		case 's': {
 			this->resetObjects();      
 		}
@@ -728,7 +734,9 @@ void MultiFinger::resetObjects(){
 
 	//alumini cube
 	fAluminio1->SetVelocity(Vec3d());
-	qq.FromEuler(Vec3f(Radf(0.0f), Radf(180.0f), 0.0f));
-	ptmp = Posed(Vec3d(0.0f, 0.025f, -0.1f), qq);
+	qq.FromEuler(Vec3f(Radf(0.0f), Radf(0), 0.0f));
+	ptmp = Posed(Vec3d(0.0f, 0.1451f, 0.0f), qq);
 	fAluminio1->SetPose(ptmp);
+	fAluminio1->SetVelocity(Vec3d());
+	fAluminio1->SetAngularVelocity(Vec3d());
 }

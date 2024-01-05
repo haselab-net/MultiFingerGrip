@@ -25,32 +25,33 @@ FWScene fwScene
 		*soTool1		// PHSolid
 		*grMeshTool1	    // GRFrame
 	}
-	FWObject fwTool2{
-		*soTool2		// PHSolid
-		*grMeshTool2	    // GRFrame
-	}
-	FWObject fwJenga1{
-		*soJenga1		// PHSolid
-		*grJenga1	    // GRFrame
-	}
+//	FWObject fwTool2{
+//		*soTool2		// PHSolid
+//		*grMeshTool2	    // GRFrame
+//	}
+//	FWObject fwJenga1{
+//		*soJenga1		// PHSolid
+//		*grJenga1	    // GRFrame
+//	}
 	
-	FWObject fwPhone{
-		*soPhone		// PHSolid
-		*grPhone	    // GRFrame
-	}
+//	FWObject fwPhone{
+//		*soPhone		// PHSolid
+//		*grPhone	    // GRFrame
+//	}
 	
-	FWObject fwHammer{
-		*soHammer		// PHSolid
-		*grHammer	    // GRFrame
-	}
+//	FWObject fwHammer{
+//		*soHammer		// PHSolid
+//		*grHammer	    // GRFrame
+//	}
 	
-	FWObject fwAluminio{
-		*soAluminio		// PHSolid
-		*grAluminio	    // GRFrame
-	}
+//	FWObject fwAluminio{
+//		*soAluminio		// PHSolid
+//		*grAluminio	    // GRFrame
+//	}
 	
 	/* PHScene */
 	PHScene phScene{
+		gravity = 0 -9.8 0
 		PHSolid soCube{
 			mass = 50.0
 			pose = 1 0 0 0 0.0 0.0 0.0
@@ -69,8 +70,9 @@ FWScene fwScene
 			pose = 1 0 0 0 -0.05 0.15 0.0
 			dynamical = true
 			PHFrame{
-				CDBox cdTool0{
-				boxsize = 0.012 0.012 0.012 
+				CDSphere cdTool0{
+				radius = 0.012
+				//boxsize = 0.012 0.012 0.012 
 				}
 			}
 		}
@@ -81,8 +83,9 @@ FWScene fwScene
 			pose = 1 0 0 0 0.05 0.15 0.0
 			dynamical = true
 			PHFrame{
-				CDBox cdTool1{
-				boxsize = 0.012 0.012 0.012 
+				CDSphere cdTool1{
+				radius = 0.012
+				//boxsize = 0.012 0.012 0.012 
 				}
 			}
 		}
@@ -138,23 +141,22 @@ FWScene fwScene
 		//	}
 		//}
 		
-		//PHSolid soAluminio{		
-		//	mass = 1.0
-		//	pose = 0.707107 0 0.707107 0 0.0 0.0305 -0.1
-		//	dynamical = true
-		//	PHFrame{
-		//		CDBox cdAluminio{
-		//		boxsize = 0.045 0.045 0.045 
-		//		}
-		//	}
-		//}
 		PHSolid soAluminioLight{		
 			mass = 1.0
-			pose = 0.707107 0 0.707107 0 0.0 0.039 0.00
+			pose = 0.707107 0 0.707107 0 0.0 0.0451 0.00
 			dynamical = true
 			PHFrame{
 				CDBox cdAluminio{
 				boxsize = 0.045 0.045 0.045 
+				}
+			}
+			PHFrame{
+				pose = 1 0 0 0 0 0.045 0
+				CDBox cdAluminioStick{
+				material = {
+					density = 0
+				} 
+				boxsize = 0.04 0.09 0.04 
 				}
 			}
 		}
