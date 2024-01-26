@@ -9,7 +9,7 @@ struct FingerDesc {
 	Vec3d direction;
 	Vec3d position;
 	double length = 0;
-	double maxLength = 0.05;
+	double maxLength = 0.035;
 	PHSolidIf* tool=NULL;			//	Tool's solid (should have shape)
 	PHSpringIf* spring = NULL;	//	slider joint from the device to the tool.
 };

@@ -351,7 +351,7 @@ void MultiFinger::InitHapticInterface(){
 
 void MultiFinger::InitCameraView(){
 
-	Vec3d pos = Vec3d(0, 0.02, 0.2);
+	Vec3d pos = Vec3d(0, 0.02, 0.4);
 	GetCurrentWin()->GetTrackball()->SetPosition(pos);
 	Affinef af;
 	af.Pos() = pos;
@@ -387,15 +387,16 @@ void MultiFinger::calibrate() {
 
 //This multimedia thread handles the haptic (6DOF virtual coupling pointers) and physics simulation (Springhead)
 double globalTime = 0;
-double amplitude = 4.0; 
+double amplitude = 8.0; 
 double frequency = 200.0;
 double decayRate = 200;
 
-double sinAmplitude = 4.0;
-double sinFrequency = 200.0;
+double sinAmplitude = 8.0;
+double sinFrequency = 160.0;
 
 std::vector<float> hapticList;
 float lastX, lastY, lastZ;
+float lastRelativeVel = 0;
 
 void MultiFinger::TimerFunc(int id){
 	
@@ -404,7 +405,7 @@ void MultiFinger::TimerFunc(int id){
 
 	
 	globalTime += 0.001;
-
+	
 	//DSTR << "timers id: " << pTimerID << std::endl;
 	if (pTimerID == id){
 		// Count "Cycle Per Second"
@@ -429,14 +430,17 @@ void MultiFinger::TimerFunc(int id){
 		static bool prevState[100];
 
 		float relativeVel = 0;
+		float relativeAcc = 0;
 		for (int i = 0; i < phscene->NContacts(); ++i) {
 			PHContactPointIf* cp = phscene->GetContact(i);
 			auto name = cp->GetSocketSolid()->GetName();;
 			if (name[2] == 'T' && name[3] == 'o') { //soTools
 				Vec3d v, w; 
 				cp->GetRelativeVelocity(v, w);
-				relativeVel += v.x + v.y + v.z;
+				//relativeVel += v.x + v.y + v.z;
+				relativeVel += v.y;
 			}
+			
 			
 			
 			if (!cp->IsStaticFriction() && prevState[i] && prevSolid[i] == cp->GetSocketSolid()) {
@@ -447,7 +451,8 @@ void MultiFinger::TimerFunc(int id){
 			prevState[i] = cp->IsStaticFriction();
 			prevSolid[i] = cp->GetSocketSolid();
 		}
-
+		relativeAcc = relativeVel - lastRelativeVel;
+		lastRelativeVel = relativeVel;
 
 		Posed pose = spidar->GetPose();
 		pose.Pos() = pose.Pos()*4;
@@ -495,8 +500,8 @@ void MultiFinger::TimerFunc(int id){
 
 		Vec3d totalForce, totalTorque;
 		for (Finger& finger : grip.fingers) {
-			double offset = 0.04; // grabForce == 0 ‚Æ‚È‚éˆÊ’u‚ð‚¸‚ç‚·
-			finger.AddForce((grabForce - offset) / 4);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
+			double offset = 0.02; // grabForce == 0 ‚Æ‚È‚éˆÊ’u‚ð‚¸‚ç‚·
+			finger.AddForce((grabForce - offset) / 3);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
 			Vec6d couplingForce = finger.spring->GetMotorForce();
 			//DSTR << "c" << finger.GetIndex() << " f=" << couplingForce << std::endl;
 			//	finger.AddForce(couplingForce[0]);
@@ -532,6 +537,8 @@ void MultiFinger::TimerFunc(int id){
 				csvData.push_back(fAluminio1->GetPose().Pos().y);
 
 				csvData.push_back(totalForce.y);
+				csvData.push_back(relativeVel);
+				csvData.push_back(relativeAcc);
 				//write csv
 				// Open file in append mode
 				std::ofstream file(csvFilename, std::ios::app);
@@ -627,7 +634,14 @@ void MultiFinger::Keyboard(int key, int x, int y){
 		case 's': {
 			this->resetObjects();      
 		}
-			break;
+		break;
+		case 'a': {
+			
+			fAluminio1->GetShape(0)->SetDensity(fAluminio1->GetShape(0)->GetDensity() * 2);
+			fAluminio1->CompInertia();
+			std::cout << fAluminio1->GetShape(0)->GetDensity() << std::endl;
+		}
+				break;
 		case '1': case '2': case '3': case '4': case '5': case '6': 
 		case '7': case '8': case '9':
 			grabKey = key; 

@@ -5,7 +5,7 @@ void Finger::AddForce(double f) {
 }
 void Finger::Step(PHSolidIf* soGripTool, double dt) {
 	//length += 100 * force * dt;
-	length = force;
+	length = force / 6;
 	force = 0;
 	LimitLength();
 
@@ -34,8 +34,8 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	sprDesc.posePlug.Ori() = deviceOrientation;
 	sprDesc.spring = 90 * Vec3d(1, 1, 1);	//	0.5N/mm = 500N/m
 	sprDesc.damper = sprDesc.spring * 0.01;
-	sprDesc.springOri = sprDesc.spring[0] * 1;
-	sprDesc.damperOri = sprDesc.damper[0] * 1;
+	sprDesc.springOri = sprDesc.spring[0] * 5;
+	sprDesc.damperOri = sprDesc.damper[0] * 5;
 
 	spring = phScene->CreateJoint(gripDevice, tool, sprDesc)->Cast();
 }
