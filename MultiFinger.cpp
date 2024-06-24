@@ -145,9 +145,9 @@ void MultiFinger::BuildScene(){
 	fAluminio1 = phscene->FindObject("soAluminioLight")->Cast();
 	fAluminio1->GetShape(0)->SetDensity(4000 / md);  //non specific value try and error
 	fAluminio1->CompInertia();
-	fAluminio1->GetShape(0)->SetStaticFriction(0.3f);
+	fAluminio1->GetShape(0)->SetStaticFriction(0.23f);
 	fAluminio1->GetShape(0)->SetDynamicFriction(0.2f);
-	fAluminio1->GetShape(1)->SetStaticFriction(0.3f);
+	fAluminio1->GetShape(1)->SetStaticFriction(0.23f);
 	fAluminio1->GetShape(1)->SetDynamicFriction(0.2f);
 
 //	fAluminio1->AddShape(fAluminio->GetShape(0));
@@ -391,7 +391,7 @@ double amplitude = 8.0;
 double frequency = 200.0;
 double decayRate = 200;
 
-double sinAmplitude = 8.0;
+double sinAmplitude = 15.0;
 double sinFrequency = 160.0;
 
 std::vector<float> hapticList;
@@ -460,14 +460,15 @@ void MultiFinger::TimerFunc(int id){
 		if (flexiforce) {
 			static int c = 0;
 			c++;
-			// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
 			float volts = flexiforce->Voltage();
 			
-			grabForce = (volts * -2.4914 + 4.4105);// -offset;
+			grabForce = (volts * -1.85849 + 2.61944);// -offset; -2.4914 + 4.4105
+			//grabForce = (volts * -500 + 304.5);
 
 			if (c % 10 == 0) {
-				DSTR << "grabforce: " << grabForce << std::endl;
+				DSTR << "grabforce: " << volts << std::endl;
 			}
+			//std:cout << "grabforce: " << grabForce << std::endl;
 
 		}
 
@@ -526,6 +527,7 @@ void MultiFinger::TimerFunc(int id){
 		if (value < -vibMax)
 			value = -vibMax;
 
+		totalForce.y *= 1.5;
 		if(xh != 0) //add vibration except condition 0(nothing
 			totalForce.y += value;
 

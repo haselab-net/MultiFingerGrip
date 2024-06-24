@@ -3,7 +3,16 @@
 void Finger::AddForce(double f) {
 	force += f;
 }
+
 void Finger::Step(PHSolidIf* soGripTool, double dt) {
+	Spr::Vec6d fSpring= spring->GetMotorForce();
+	static int Counter = 0;
+	Counter++;
+	if (Counter > 100) {
+		//std::cout << fSpring << std::endl;
+		Counter = 0;
+	}
+
 	//length += 100 * force * dt;
 	length = force / 6;
 	force = 0;
@@ -13,7 +22,10 @@ void Finger::Step(PHSolidIf* soGripTool, double dt) {
 	pose.Pos() = position + length*direction;
 	pose.Ori() = deviceOrientation;
 	spring->SetSocketPose(pose);
+	
 }
+
+
 void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	PHSceneIf* phScene = fwScene->GetPHScene();
 	ostringstream toolName;
@@ -24,8 +36,8 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	}
 	tool->SetGravity(false);
 	tool->SetFramePosition(gripDevice->GetPose() * (position + length*direction));
-	tool->GetShape(0)->SetStaticFriction(0.7);
-	tool->GetShape(0)->SetDynamicFriction(0.65);
+	tool->GetShape(0)->SetStaticFriction(0.5);
+	tool->GetShape(0)->SetDynamicFriction(0.52);
 
 	deviceOrientation.RotationArc(Vec3d(1, 1, 1), direction);
 	PHSpringDesc sprDesc;
