@@ -142,7 +142,7 @@ FWScene fwScene
 		//}
 		
 		PHSolid soAluminioLight{		
-			mass = 1.0
+			mass = 0.15
 			pose = 0.707107 0 0.707107 0 0.0 0.0451 0.00
 			dynamical = true
 			PHFrame{

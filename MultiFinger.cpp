@@ -143,12 +143,14 @@ void MultiFinger::BuildScene(){
 	//fAluminio->SetStationary(0);
 
 	fAluminio1 = phscene->FindObject("soAluminioLight")->Cast();
-	fAluminio1->GetShape(0)->SetDensity(4000 / md);  //non specific value try and error
+	fAluminio1->GetShape(0)->SetDensity(463); //463 for 100g for 694 150g
 	fAluminio1->CompInertia();
-	fAluminio1->GetShape(0)->SetStaticFriction(0.23f);
-	fAluminio1->GetShape(0)->SetDynamicFriction(0.2f);
-	fAluminio1->GetShape(1)->SetStaticFriction(0.23f);
-	fAluminio1->GetShape(1)->SetDynamicFriction(0.2f);
+	fAluminio1->GetShape(0)->SetStaticFriction(0.17f);
+	fAluminio1->GetShape(0)->SetDynamicFriction(0.1f);
+	fAluminio1->GetShape(1)->SetStaticFriction(0.17f);
+	fAluminio1->GetShape(1)->SetDynamicFriction(0.1f);
+
+	
 
 //	fAluminio1->AddShape(fAluminio->GetShape(0));
 //	fAluminio1->AddChildObject(fAluminio->GetShape(0));
