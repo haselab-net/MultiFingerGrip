@@ -43,15 +43,16 @@ std::vector<float> csvData;
 
 void MultiFinger::Init(int argc, char* argv[]){
 
-	std::cout << "userNum: ";
-	std::cin >> userNum;
+	//std::cout << "userNum: ";
+	//std::cin >> userNum;
 
-	std::cout << "xh: ";
-	std::cin >> xh;// experiment number
+	//std::cout << "xh: ";
+	//std::cin >> xh;// experiment number
 
-	std::cout << "md: ";
-	std::cin >> md; // density
-
+	//std::cout << "md: ";
+	//std::cin >> md; // density
+	userNum = 999;
+	xh = 1;
 	csvFilename = std::to_string(userNum) + "_" + std::to_string(xh) + "_" + std::to_string(md) + "_" + getCurrentTimestamp() + ".csv";
 
 	FWApp::Init(argc, argv);
@@ -398,12 +399,19 @@ double sinFrequency = 160.0;
 
 std::vector<float> hapticList;
 float lastX, lastY, lastZ;
+
+
+double previousGripForce = 0.0; // for Jump detection
+std::deque<double> gripForceBuffer;
+int windowSize = 300; 
+int relativeVelStartTime = -1; //last relative velocity start time(sliding start)
 float lastRelativeVel = 0;
+bool jumpDetected = false;
 
 void MultiFinger::TimerFunc(int id){
 	
-	
-
+	static bool isFirstRun = true;// for Jump detection
+	static double jumpThreshold = 0.6;
 
 	
 	globalTime += 0.001;
@@ -424,6 +432,14 @@ void MultiFinger::TimerFunc(int id){
 			}
 			cycle++;
 		}
+
+		static auto start = std::chrono::high_resolution_clock::now();
+		auto now = std::chrono::high_resolution_clock::now();
+		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+		//std::cout << "Current runtime: " << elapsed << " ms" << std::endl;
+
+
+
 		UTAutoLock LOCK(displayLock);
 
 		phscene->Step();  //springhead physics step
@@ -464,11 +480,11 @@ void MultiFinger::TimerFunc(int id){
 			c++;
 			float volts = flexiforce->Voltage();
 			
-			grabForce = (volts * -1.85849 + 2.61944);// -offset; -2.4914 + 4.4105
+			grabForce = (volts * -6.0603 + 4.987);// -offset; -2.4914 + 4.4105
 			//grabForce = (volts * -500 + 304.5);
 
 			if (c % 10 == 0) {
-				DSTR << "grabforce: " << volts << std::endl;
+				DSTR << "grabforce: " << grabForce << std::endl;
 			}
 			//std:cout << "grabforce: " << grabForce << std::endl;
 
@@ -534,6 +550,48 @@ void MultiFinger::TimerFunc(int id){
 			totalForce.y += value;
 
 		if (bForceFeedback) {
+			auto objectVelocity = fAluminio1->GetVelocity().x + fAluminio1->GetVelocity().y + fAluminio1->GetVelocity().z;
+			if (relativeVel > 0.001 && relativeVelStartTime == -1 && fAluminio1->GetVelocity().y > 0.001)
+			{
+				relativeVelStartTime = elapsed;
+			}
+
+
+			if (relativeVel <= 0.001 && relativeVelStartTime != -1 && (elapsed - relativeVelStartTime) > 300) // if relSpeed Interrupt longer than 50ms
+			{
+				relativeVelStartTime = -1;
+			}
+
+			if ((elapsed - relativeVelStartTime) > 500) // if too long time no response
+				relativeVelStartTime = -1;
+			//JumpDetection
+			gripForceBuffer.push_back(grabForce);
+			if (gripForceBuffer.size() > windowSize) {
+				gripForceBuffer.pop_front();
+			}
+
+			if (gripForceBuffer.size() >= windowSize) { // minDetection Frame Number
+				double minForce = *std::min_element(gripForceBuffer.begin(), gripForceBuffer.end() - 1); // don't include new value
+				double maxForce = grabForce;
+				//if (maxForce - minForce > 0.5)
+				//std::cout << "fsfs" << maxForce - minForce << std::endl;
+				if (maxForce - minForce > jumpThreshold) {
+					
+					if (relativeVelStartTime > 0.001 )
+					{
+						auto leg = (elapsed - relativeVelStartTime);
+						if (leg > 30) //omit too small 
+						{
+							std::cout << "Response Latency:" << leg << "(ms)" << std::endl; //the timer's speed is 2x from real
+							relativeVelStartTime = -1;
+						}
+					}
+					gripForceBuffer.clear();
+					
+				}
+			}
+
+
 			spidar->SetForce(-fs * totalForce, -ts * totalTorque);
 			//std::cout << "x:" << totalForce.x << "y:" << totalForce.y << "z:" << totalForce.z << std::endl;
 			if (userNum != 999) {// if not testing
@@ -543,6 +601,7 @@ void MultiFinger::TimerFunc(int id){
 				csvData.push_back(totalForce.y);
 				csvData.push_back(relativeVel);
 				csvData.push_back(relativeAcc);
+				csvData.push_back(elapsed);
 				//write csv
 				// Open file in append mode
 				std::ofstream file(csvFilename, std::ios::app);
@@ -646,12 +705,12 @@ void MultiFinger::Keyboard(int key, int x, int y){
 			std::cout << fAluminio1->GetShape(0)->GetDensity() << std::endl;
 		}
 				break;
-		case '1': case '2': case '3': case '4': case '5': case '6': 
-		case '7': case '8': case '9':
-			grabKey = key; 
+		//case '1': case '2': case '3': case '4': case '5': case '6': 
+		//case '7': case '8': case '9':
+		//	grabKey = key; 
 
-			break;
-		
+		//	break;
+		//
 			//NUM KEYS BLOCK
 		case 356: // left
 		{
@@ -685,6 +744,22 @@ void MultiFinger::Keyboard(int key, int x, int y){
 			{
 				DSTR << "OFF\n";
 			}
+			break;
+		case '3': {
+			std::cout << "Vibration Only\n";
+			xh = 2;
+		}
+				break;
+		case '2': {
+			std::cout << "Tengential Force + Vibration\n";
+			xh = 1;
+		}
+				break;
+		case '1': {
+			std::cout << "No Feedback\n";
+			xh = 0;
+		}
+				break;
 	}
 	
 	ptimer->Start();

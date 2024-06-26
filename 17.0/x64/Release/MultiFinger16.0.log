@@ -1,26 +1,28 @@
-﻿  FingerGrip.cpp
-  MultiFinger.cpp
-  main.cpp
-C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\FingerGrip.cpp(40,40): warning C4305: 'argument': truncation from 'double' to 'float'
+﻿  MultiFinger.cpp
 C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(32,25): warning C4996: 'localtime': This function or variable may be unsafe. Consider using localtime_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(443,21): warning C4244: '+=': conversion from 'T' to 'float', possible loss of data
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(459,21): warning C4244: '+=': conversion from 'T' to 'float', possible loss of data
           with
           [
               T=double
           ]
-C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(450,26): warning C4244: 'argument': conversion from 'double' to '_Ty', possible loss of data
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(466,26): warning C4244: 'argument': conversion from 'double' to '_Ty', possible loss of data
           with
           [
               _Ty=float
           ]
-C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(482,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(484,17): warning C4305: '=': truncation from 'double' to 'float'
-C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(540,23): warning C4244: 'argument': conversion from 'double' to '_Ty', possible loss of data
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(498,20): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(500,17): warning C4305: '=': truncation from 'double' to 'float'
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(556,28): warning C4244: '=': conversion from '_Rep' to 'int', possible loss of data
+          with
+          [
+              _Rep=__int64
+          ]
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(598,23): warning C4244: 'argument': conversion from 'double' to '_Ty', possible loss of data
           with
           [
               _Ty=float
           ]
-C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(541,50): warning C4244: 'argument': conversion from 'T' to '_Ty', possible loss of data
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(599,50): warning C4244: 'argument': conversion from 'T' to '_Ty', possible loss of data
           with
           [
               T=double
@@ -29,10 +31,19 @@ C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(541,50): warn
           [
               _Ty=float
           ]
-C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(543,33): warning C4244: 'argument': conversion from 'T' to '_Ty', possible loss of data
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(601,33): warning C4244: 'argument': conversion from 'T' to '_Ty', possible loss of data
           with
           [
               T=double
+          ]
+          and
+          [
+              _Ty=float
+          ]
+C:\Users\yunxiu\Experiments\Haptic\MultiFingerGrip\MultiFinger.cpp(604,23): warning C4244: 'argument': conversion from '_Rep' to '_Ty', possible loss of data
+          with
+          [
+              _Rep=__int64
           ]
           and
           [
