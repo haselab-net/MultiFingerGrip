@@ -405,8 +405,9 @@ double previousGripForce = 0.0; // for Jump detection
 std::deque<double> gripForceBuffer;
 int windowSize = 300; 
 int relativeVelStartTime = -1; //last relative velocity start time(sliding start)
-float lastRelativeVel = 0;
+float lastRelativeVel = 0, lastHeight = 0;
 bool jumpDetected = false;
+int lastOutputFrame = 0;
 
 void MultiFinger::TimerFunc(int id){
 	
@@ -425,7 +426,8 @@ void MultiFinger::TimerFunc(int id){
 			DWORD now = timeGetTime();
 			if (now - lastCounted > 1000) {
 			float cps = (float)(cycle) / (float)(now - lastCounted) * 1000.0f;
-			std::cout << cps << std::endl;
+			//std::cout << cps << std::endl;
+			std::cout << "-" << std::endl;
 			lastCounted = now;
 			cycle = 0;
 			int a = 0;
@@ -471,6 +473,7 @@ void MultiFinger::TimerFunc(int id){
 		}
 		relativeAcc = relativeVel - lastRelativeVel;
 		lastRelativeVel = relativeVel;
+		
 
 		Posed pose = spidar->GetPose();
 		pose.Pos() = pose.Pos()*4;
@@ -550,19 +553,17 @@ void MultiFinger::TimerFunc(int id){
 			totalForce.y += value;
 
 		if (bForceFeedback) {
-			auto objectVelocity = fAluminio1->GetVelocity().x + fAluminio1->GetVelocity().y + fAluminio1->GetVelocity().z;
-			if (relativeVel > 0.001 && relativeVelStartTime == -1 && fAluminio1->GetVelocity().y > 0.001)
+			//auto objectVelocity = fAluminio1->GetVelocity().x + fAluminio1->GetVelocity().y + fAluminio1->GetVelocity().z; //&& grip.fingers[0].spring->GetMotorForce().vx
+			if (relativeVel > 0.001 && relativeVelStartTime == -1 && lastHeight - fAluminio1->GetCenterPosition().y > 0.0001 )
 			{
 				relativeVelStartTime = elapsed;
 			}
 
+			
+			/*if(lastHeight - fAluminio1->GetCenterPosition().y < 0.00001)
+				relativeVelStartTime = -1;*/
 
-			if (relativeVel <= 0.001 && relativeVelStartTime != -1 && (elapsed - relativeVelStartTime) > 300) // if relSpeed Interrupt longer than 50ms
-			{
-				relativeVelStartTime = -1;
-			}
-
-			if ((elapsed - relativeVelStartTime) > 500) // if too long time no response
+			if ((elapsed - relativeVelStartTime) > 350) // if too long time no response
 				relativeVelStartTime = -1;
 			//JumpDetection
 			gripForceBuffer.push_back(grabForce);
@@ -577,13 +578,13 @@ void MultiFinger::TimerFunc(int id){
 				//std::cout << "fsfs" << maxForce - minForce << std::endl;
 				if (maxForce - minForce > jumpThreshold) {
 					
-					if (relativeVelStartTime > 0.001 )
-					{
-						auto leg = (elapsed - relativeVelStartTime);
-						if (leg > 30) //omit too small 
+					if (relativeVelStartTime > 0.001) {
+						auto lag = (elapsed - relativeVelStartTime);
+						if (lag > 30 && elapsed - lastOutputFrame > 1000) //omit too small and to near bug output
 						{
-							std::cout << "Response Latency:" << leg << "(ms)" << std::endl; //the timer's speed is 2x from real
+							std::cout << "Response Latency:" << lag << "(ms)" << std::endl; //the timer's speed is 2x from real
 							relativeVelStartTime = -1;
+							lastOutputFrame = elapsed;
 						}
 					}
 					gripForceBuffer.clear();
@@ -624,6 +625,8 @@ void MultiFinger::TimerFunc(int id){
 			spidar->SetForce(Vec3d(), Vec3d());
 			
 		}
+
+		lastHeight = fAluminio1->GetCenterPosition().y;
 		//DSTR << "Total = f:" << totalForce << " t:" << totalTorque << std::endl;
 
 		//	Following two lines fixs the tool[0] to see coupling force for debugging.
