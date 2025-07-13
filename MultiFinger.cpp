@@ -213,6 +213,9 @@ void MultiFinger::InitHapticInterface(){
 		spidar = hiSdk->CreateHumanInterface(HINovintFalconIf::GetIfInfoStatic())->Cast();
 		spidar->Init(NULL);
 	}
+	else {
+
+	}
 	/*//The port is 3 because the sensor is connected to the port 3 on the Spidar's AD Converter
 	if (bFoundCy) {
 		flexiforce = hiSdk->RentVirtualDevice(DVAdIf::GetIfInfoStatic(), "", 3)->Cast();
@@ -432,7 +435,7 @@ void MultiFinger::TimerFunc(int id){
 				DSTR << "grabforce: " << grabForce << std::endl;
 			}
 		}
-		grip.Step(pose, phscene->GetTimeStep());	//	this will be actual code.
+		//grip.Step(pose, phscene->GetTimeStep());	//	this will be actual code.
 
 		Vec3d totalForce, totalTorque;
 		for (Finger& finger : grip.fingers) {
@@ -497,6 +500,9 @@ void MultiFinger::Keyboard(int key, int x, int y){
 		while (!ptimer->Stop());
 	}
 	int spKey = key - 0x100;
+	Posed pose = grip.gripDevice->GetPose();
+	const double d = 0.01;
+	
 	switch (key){
 		case 27:
 		case 'q':
@@ -541,24 +547,35 @@ void MultiFinger::Keyboard(int key, int x, int y){
 			//NUM KEYS BLOCK
 		case 356: // left
 		{
-
+			pose.PosX() -= d;
+				
 		}
 			break;
 		case 358: // right
 		{
-			
-
+			pose.PosX() += d;
 		}
 			break;
 		case 357: // up
 		{
-			
+			pose.PosY() += d;
 		}
 			break;
 		case 359: // down
 		{
-			
+			pose.PosY() -= d;
 		}
+		case ',':
+			grabForce -= d;
+			break;
+		case '.':
+			grabForce += d;
+			break;
+		case DVKeyCode::PAGE_UP:
+			pose.PosZ() -= d;
+			break;
+		case DVKeyCode::PAGE_DOWN:
+			pose.PosZ() += d;
 			break;
 		case 'f':
 			bForceFeedback = !bForceFeedback;
@@ -572,7 +589,11 @@ void MultiFinger::Keyboard(int key, int x, int y){
 				DSTR << "OFF\n";
 			}
 	}
-	
+	grip.Step(pose, phscene->GetTimeStep());
+
+	for (Finger& finger : grip.fingers) {
+		finger.AddForce(grabForce); //
+	}
 	ptimer->Start();
 }
 
