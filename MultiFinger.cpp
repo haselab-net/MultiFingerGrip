@@ -6,7 +6,7 @@
 #include <HumanInterface/SprHIKeyMouse.h>
 #include <Foundation/SprUTQPTimer.h>
 #include <iomanip>
-
+#include "logger.hpp"
 
 
 //Constructor 
@@ -21,6 +21,8 @@ MultiFinger::MultiFinger(){
 	//this->myfile.open("c:\\tmp\\loco.csv");
 
 	displayGraphFlag = true;
+
+	logger = new Logger("log.csv");
 }
 
 //main function of the class
@@ -61,12 +63,12 @@ void MultiFinger::BuildScene(){
 	grip.Build(fwscene);
 
 
-	GetSdk()->GetScene(i)->EnableRenderHaptic();
-	hapscene = phscene->GetHapticEngine();
+	//GetSdk()->GetScene(i)->EnableRenderHaptic();
+	//hapscene = phscene->GetHapticEngine();
 	//hapscene->EnableHapticEngine(true);
 
-	PHHapticEngineIf* he = phscene->GetHapticEngine();	// 力覚エンジンをとってくる
-	PHHapticEngineDesc hd;
+	//PHHapticEngineIf* he = phscene->GetHapticEngine();	// 力覚エンジンをとってくる
+	//PHHapticEngineDesc hd;
 	//he->EnableHapticEngine(true);						// 力覚エンジンの有効化
 	//he->SetHapticEngineMode(PHHapticEngineDesc::SINGLE_THREAD);
 	maxReach = 0.05;
@@ -115,11 +117,11 @@ void MultiFinger::BuildScene(){
 	
 	
 	//define jenga object properties
-	fJenga1 = phscene->FindObject("soJenga1")->Cast();
-	fJenga1->GetShape(0)->SetDensity(357.142f);  //non specific value try and error
-	fJenga1->CompInertia();
-	fJenga1->GetShape(0)->SetStaticFriction(0.7f);
-	fJenga1->GetShape(0)->SetDynamicFriction(0.7f);
+	//fJenga1 = phscene->FindObject("soJenga1")->Cast();
+	//fJenga1->GetShape(0)->SetDensity(357.142f);  //non specific value try and error
+	//fJenga1->CompInertia();
+	//fJenga1->GetShape(0)->SetStaticFriction(0.7f);
+	//fJenga1->GetShape(0)->SetDynamicFriction(0.7f);
 	//DSTR << "jenga mass: " << fJenga1->GetMass() << std::endl;  //debug
 	//DSTR << "jenga volume: " << fJenga1->GetShape(0)->CalcVolume() << std::endl;  //debug
 
@@ -136,36 +138,36 @@ void MultiFinger::BuildScene(){
 	//fJenga3->GetShape(0)->SetDynamicFriction(0.7);
 
 	//defining the cellphone density and mass
-	fPhone = phscene->FindObject("soPhone")->Cast();
-	fPhone->GetShape(0)->SetDensity(677);  // non specific value try and error
-	fPhone->CompInertia();
-	fPhone->GetShape(0)->SetStaticFriction(0.7f);
-	fPhone->GetShape(0)->SetDynamicFriction(0.7f);
-	DSTR << "phone mass: " << fPhone->GetMass() << std::endl;  //debug
-	DSTR << "phone volume" << fPhone->GetShape(0)->CalcVolume() << std::endl;  //debug
+	//fPhone = phscene->FindObject("soPhone")->Cast();
+	//fPhone->GetShape(0)->SetDensity(677);  // non specific value try and error
+	//fPhone->CompInertia();
+	//fPhone->GetShape(0)->SetStaticFriction(0.7f);
+	//fPhone->GetShape(0)->SetDynamicFriction(0.7f);
+	//DSTR << "phone mass: " << fPhone->GetMass() << std::endl;  //debug
+	//DSTR << "phone volume" << fPhone->GetShape(0)->CalcVolume() << std::endl;  //debug
 	
 	//defining the hammer density and mass
-	fHammer = phscene->FindObject("soHammer")->Cast();
-	fHammer->GetShape(0)->SetDensity(1500); //non specific value try and error  1012.25
-	fHammer->GetShape(1)->SetDensity(244.90f);  //non specific value try and error
-	fHammer->GetShape(0)->SetStaticFriction(0.70f);
-	fHammer->GetShape(0)->SetDynamicFriction(0.7f);
-	fHammer->GetShape(1)->SetStaticFriction(0.7f);
-	fHammer->GetShape(1)->SetDynamicFriction(0.7f);
-	fHammer->CompInertia();
+	//fHammer = phscene->FindObject("soHammer")->Cast();
+	//fHammer->GetShape(0)->SetDensity(1500); //non specific value try and error  1012.25
+	//fHammer->GetShape(1)->SetDensity(244.90f);  //non specific value try and error
+	//fHammer->GetShape(0)->SetStaticFriction(0.70f);
+	//fHammer->GetShape(0)->SetDynamicFriction(0.7f);
+	//fHammer->GetShape(1)->SetStaticFriction(0.7f);
+	//fHammer->GetShape(1)->SetDynamicFriction(0.7f);
+	//fHammer->CompInertia();
 	//DSTR << "hammer mass: " << fHammer->GetMass() << std::endl;  //debug
 	//DSTR << "head volume: " << fHammer->GetShape(0)->CalcVolume() << std::endl;  //debug
 	//DSTR << "stick volume: " << fHammer->GetShape(1)->CalcVolume() << std::endl; //debug 
 
 	//aluminium block  mass and density  64cm^3 * iron density (7.87gr) = 200
-	fAluminio = phscene->FindObject("soAluminio")->Cast();
-	fAluminio->GetShape(0)->SetDensity(1355);  //non specific value try and error
-	fAluminio->CompInertia();
-	fAluminio->GetShape(0)->SetStaticFriction(0.7f);
-	fAluminio->GetShape(0)->SetDynamicFriction(0.7f);
-	DSTR << "aluminio vol: " << fAluminio->GetShape(0)->CalcVolume() << std::endl;  //debug
-	DSTR << "aluminio mass: " << fAluminio->GetMass() << std::endl;   //debug
-
+	//fAluminio = phscene->FindObject("soAluminio")->Cast();
+	//fAluminio->GetShape(0)->SetDensity(1355);  //non specific value try and error
+	//fAluminio->CompInertia();
+	//fAluminio->GetShape(0)->SetStaticFriction(0.7f);
+	//fAluminio->GetShape(0)->SetDynamicFriction(0.7f);
+	//DSTR << "aluminio vol: " << fAluminio->GetShape(0)->CalcVolume() << std::endl;  //debug
+	//DSTR << "aluminio mass: " << fAluminio->GetMass() << std::endl;   //debug
+	//GetSdk()->SaveScene("scene_.spr", (Spr::ImportIf*)import);
 }
 
 //Inits SPIDAR and calibrates the pointer position
@@ -483,6 +485,46 @@ void MultiFinger::TimerFunc(int id){
 		}
 		*/
 
+		PHSolidIf* tool = grip.fingers[0].tool;
+		PHSolidIf* target = phscene->FindObject("soAluminioLight")->Cast();
+		//cout << "soAluminioLight:" << target->GetMass() << std::endl;
+		bool bswap = false;
+		PHSolidPairForLCPIf* sp = phscene->GetSolidPair(tool, target, bswap);
+		PHShapePairForLCPIf* p = sp->GetShapePair(0, 0);
+		PHContactPointIf* cp = nullptr;
+		for (int i = 0; i < phscene->NContacts(); i++) {
+			cp = phscene->GetContact(i);
+			if (cp->GetSocketSolid() == tool && cp->GetPlugSolid() == target ||
+				cp->GetSocketSolid() == target && cp->GetPlugSolid() == tool) {
+				static unsigned long contactDuration = 0;	// [ms]
+				logger->addData("t", (double)(contactDuration));
+				
+				Vec2d z = p->GetLuGreZ();
+				logger->addData("z.x", z.x, 0.01, -0.01);
+				logger->addData("z.y", z.y, 0.01, -0.01);
+				Vec2d dz = p->GetLuGreDZ();
+				logger->addData("dz.x", dz.x, 0.1, -0.1);
+				logger->addData("dz.y", dz.y, 0.1, -0.1);
+			
+				Vec2d v = p->GetLuGreV();
+				logger->addData("v.x", v.x, 1, -1);
+				logger->addData("v.y", v.y, 1, -1);
+
+				Vec3d f, t;
+				cp->GetConstraintForce(f, t);
+				logger->addData("f.x", f.x);
+				logger->addData("f.y", f.y);
+				logger->addData("f.z", f.z);
+
+				Vec3d targetPose = target->GetCenterPosition();
+				logger->addData("pose.x", targetPose.x);
+				logger->addData("pose.y", targetPose.y);
+				logger->addData("pose.z", targetPose.z);
+
+				logger->writeData();
+				contactDuration += (unsigned long)(1000.0*pdt);
+			}
+		}
 		spidar->Update(pdt);  //updates the forces displayed in SPIDAR
 		//MultiFingerStep(&spidarForce);  //This function computes the lineal and rotational couplings value
 		//spidar->SetForce(-spidarForce);  //This function set the force 
@@ -630,13 +672,38 @@ void MultiFinger::displayGraph(GRRenderIf* render)
 //Used to graphically debug the program
 void MultiFinger::Display() 
 {
+
+
+	FWWinIf* win = GetCurrentWin();
+	FWSceneIf* scene = win->GetScene();
+	GRRenderIf* render = win->GetRender();
+
+	HITrackballIf* trackball = win->GetTrackball();
+	if (!scene)
+		return;
+
+	if (!scene->GetGRScene() || !scene->GetGRScene()->GetCamera() || !scene->GetGRScene()->GetCamera()->GetFrame()) {
+		render->SetViewMatrix(trackball->GetAffine().inv());
+	}
+	scene->Sync();
+
+	render->ClearBuffer();
+	render->BeginScene();
+	scene->Draw(render, win->GetDebugMode());
+	logger->drawGraph(render);
+
+	render->EndScene();
+	render->SwapBuffers();
+	/*
 	GRRenderIf* render = GetSdk()->GetRender();
 
 	if (displayGraphFlag){
 		displayGraph(render);
 	}
 
+	logger.drawGraph(render);
 	FWApp::Display();
+	*/
 }
 
 
@@ -689,4 +756,8 @@ void MultiFinger::resetObjects(){
 	qq.FromEuler(Vec3f(Radf(0.0f), Radf(180.0f), 0.0f));
 	ptmp = Posed(Vec3d(0.0f, 0.025f, -0.1f), qq);
 	fAluminio->SetPose(ptmp);
+}
+
+void MultiFinger::IdleFunc() {
+	logger->saveRecord();
 }

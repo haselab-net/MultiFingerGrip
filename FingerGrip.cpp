@@ -4,7 +4,8 @@ void Finger::AddForce(double f) {
 	force += f;
 }
 void Finger::Step(PHSolidIf* soGripTool, double dt) {
-	length += force * dt;
+	//length += force * dt;
+	length = force / 6;
 	force = 0;
 	LimitLength();
 
@@ -18,9 +19,25 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	ostringstream toolName;
 	toolName << "soTool" << index;
 	tool = phScene->FindObject(toolName.str().c_str())->Cast();
-	if (!tool) {
-		tool = fwScene->GetPHScene()->CreateSolid();
-	}
+	
+	CDSphereDesc shapeDesc;
+	shapeDesc.radius = 0.005f;
+	shapeDesc.material.mu = shapeDesc.material.mu0 = 1.0;
+	shapeDesc.material.rotationFriction = 0.0f;
+	shapeDesc.material.frictionModel = 1;
+	shapeDesc.material.bristlesSpringK = 4000.0;	//	1000N/m
+	shapeDesc.material.bristlesDamperD = 5.0;	//	0.1Ns/m
+	shapeDesc.material.bristlesViscosityV = 0.6;	//	0.1Ns/m
+	shapeDesc.material.timeVaryFrictionA = .2;
+	shapeDesc.material.timeVaryFrictionB = .6;
+	shapeDesc.material.timeVaryFrictionC = 400.0;
+	//shapeDesc.material.frictionModel = FrictionModel::COULOMB;
+	//tool = fwScene->GetPHScene()->CreateSolid();
+	CDShapeIf* sh = fwScene->GetSdk()->GetPHSdk()->CreateShape(shapeDesc);
+	sh->SetDensity(0.0006f / sh->CalcVolume());
+	tool->RemoveShape(0);
+	tool->AddShape(sh);
+	
 	tool->SetGravity(false);
 	tool->SetFramePosition(gripDevice->GetPose() * (position + length*direction));
 
@@ -29,7 +46,7 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	sprDesc.poseSocket.Ori() = deviceOrientation;
 	sprDesc.poseSocket.Pos() = position + length * direction;
 	sprDesc.posePlug.Ori() = deviceOrientation;
-	sprDesc.spring = 500 * Vec3d(1, 1, 1);	//	0.5N/mm = 500N/m
+	sprDesc.spring = 500.0 * Vec3d(1, 1, 1);	//	0.5N/mm = 500N/m
 	sprDesc.damper = sprDesc.spring * 0.01;
 	sprDesc.springOri = sprDesc.spring[0];
 	sprDesc.damperOri = sprDesc.damper[0];

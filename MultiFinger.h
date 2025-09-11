@@ -24,6 +24,7 @@
 #include <iomanip>
 
 #include "FingerGrip.h"
+#include "Logger.hpp"
 
 using namespace Spr;
 using namespace std;
@@ -35,6 +36,8 @@ public: //Local Properties
 		XBOX,
 		FALCON,
 	} humanInterface;
+
+	Logger* logger;
 
 	FingerGrip grip;
 	HISpidarGIf* spidar;
@@ -97,6 +100,7 @@ public: //Local Properties
 	void displayGraph(GRRenderIf* render);  //draws the force graphic on the right of the screen
 
 	void resetObjects();  //resets the objects position
+	void IdleFunc();
 	bool displayGraphFlag;  //flag to display the force sensor graph
 
 	//BINOD objects
