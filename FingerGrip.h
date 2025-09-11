@@ -41,9 +41,9 @@ protected:
 };
 
 class FingerGrip {
-	Posed pose;
 public:
 	PHSolidIf* gripDevice = NULL;
+	Posed pose;
 	std::vector<Finger> fingers;
 	void Step(Posed p, double dt);
 	FingerGrip();
