@@ -58,7 +58,10 @@ void MultiFinger::BuildScene(){
 	phscene->SetTimeStep(pdt);
 
 	fwscene = GetSdk()->GetScene(i);
-	//fwscene->EnableRenderAxis();
+	//fwscene->EnableRenderAxis(false, false, true);
+	fwscene->EnableRenderForce(false, true);
+	fwscene->EnableRenderContact(true);
+	GetSdk()->SetDebugMode(true);
 
 	grip.Build(fwscene);
 
@@ -106,6 +109,7 @@ void MultiFinger::BuildScene(){
 	//DSTR << pp.OriW() << "," << pp.OriX() << "," << pp.OriY() << "," << pp.OriZ() << std::endl;
 
 	PHSolidIf *floor = phscene->FindObject("soCube")->Cast();
+	//floor->SetPose(Posed().Rot(Radf(90.0), 'z'));
 	/*fTool0->GetShape(0)->SetStaticFriction(1000.0f);
 	fTool1->GetShape(0)->SetStaticFriction(1000.0f);
 	fTool2->GetShape(0)->SetStaticFriction(1000.0f);
@@ -496,6 +500,10 @@ void MultiFinger::TimerFunc(int id){
 			cp = phscene->GetContact(i);
 			if (cp->GetSocketSolid() == tool && cp->GetPlugSolid() == target ||
 				cp->GetSocketSolid() == target && cp->GetPlugSolid() == tool) {
+
+				// when the tool contacts to target, timer stops
+				//ptimer->Stop();
+				
 				static unsigned long contactDuration = 0;	// [ms]
 				logger->addData("t", (double)(contactDuration));
 				
@@ -521,6 +529,13 @@ void MultiFinger::TimerFunc(int id){
 				logger->addData("pose.y", targetPose.y);
 				logger->addData("pose.z", targetPose.z);
 
+				Vec3d vv, vw;
+				cp->GetRelativeVelocity(vv, vw);
+				logger->addData("rv.x", vv.x);
+				logger->addData("rv.y", vv.y);
+				logger->addData("rv.z", vv.z);
+				std::cout << vv << std::endl;
+
 				logger->writeData();
 				contactDuration += (unsigned long)(1000.0*pdt);
 			}
@@ -544,99 +559,123 @@ void MultiFinger::Keyboard(int key, int x, int y){
 	int spKey = key - 0x100;
 	Posed pose = grip.gripDevice->GetPose();
 	const double d = 0.01;
-	
-	switch (key){
-		case 27:
-		case 'q':
-			exit(0);
+	bool stopTimer = false;
+	switch (key) {
+	case 27:
+	case 'q':
+		exit(0);
+		break;
+	case 'g':
+		GetSdk()->SetDebugMode(false);
+		fwscene->EnableRenderPHScene(false);
+		fwscene->EnableRenderGRScene(true);
+		break;
+	case 'h':
+		GetSdk()->SetDebugMode(true);
+		fwscene->EnableRenderGRScene(false);
+		fwscene->EnableRenderPHScene(true);
+		break;
+	case 'w':
+		InitCameraView();
+		break;
+	case 'c': {
+		calibrate();
+	}
 			break;
-		case 'g':
-			GetSdk()->SetDebugMode(false);
-			fwscene->EnableRenderPHScene(false);
-			fwscene->EnableRenderGRScene(true);
-			break;
-		case 'h':
-			GetSdk()->SetDebugMode(true);
-			fwscene->EnableRenderGRScene(false);
-			fwscene->EnableRenderPHScene(true);
-			break;
-		case 'w':
-			InitCameraView();
-			break;
-		case 'c': {
-			calibrate();
+	case 'd': {
+		if (displayGraphFlag) {
+			displayGraphFlag = false;
+			DSTR << "GRAPH DISBLED" << std::endl;
 		}
-			break;
-		case 'd': {
-			if (displayGraphFlag) {
-				displayGraphFlag = false;
-				DSTR << "GRAPH DISBLED" << std::endl;
-			}else {
-				displayGraphFlag = true;
-				DSTR << "GRAPH ENABLED" << std::endl;
-			}
+		else {
+			displayGraphFlag = true;
+			DSTR << "GRAPH ENABLED" << std::endl;
 		}
-		case 's': {
-			this->resetObjects();      
-		}
+	}
+	case 's': {
+		this->resetObjects();
+	}
 			break;
-		case '1': case '2': case '3': case '4': case '5': case '6': 
-		case '7': case '8': case '9':
-			grabKey = key; 
+	case '1': case '2': case '3': case '4': case '5': case '6':
+	case '7': case '8': case '9':
+		grabKey = key;
 
-			break;
-		
-			//NUM KEYS BLOCK
-		case 356: // left
+		break;
+
+		//NUM KEYS BLOCK
+	case 356: // left
+	{
+		pose.PosX() -= d;
+
+	}
+	break;
+	case 358: // right
+	{
+		pose.PosX() += d;
+	}
+	break;
+	case 357: // up
+	{
+		pose.PosY() += d;
+	}
+	break;
+	case 359: // down
+	{
+		pose.PosY() -= d;
+	}
+	break;
+	case ',':
+		grabForce -= d;
+		break;
+	case '.':
+		grabForce += d;
+		break;
+	case DVKeyCode::PAGE_UP:
+		pose.PosZ() -= d;
+		break;
+	case DVKeyCode::PAGE_DOWN:
+		pose.PosZ() += d;
+		break;
+	case 'f':
+		bForceFeedback = !bForceFeedback;
+		DSTR << "ForceFeedback: ";
+		if (bForceFeedback)
 		{
-			pose.PosX() -= d;
-				
+			DSTR << "ON\n";
 		}
-			break;
-		case 358: // right
+		else
 		{
-			pose.PosX() += d;
+			DSTR << "OFF\n";
 		}
-			break;
-		case 357: // up
-		{
-			pose.PosY() += d;
-		}
-			break;
-		case 359: // down
-		{
-			pose.PosY() -= d;
-		}
-		case ',':
-			grabForce -= d;
-			break;
-		case '.':
-			grabForce += d;
-			break;
-		case DVKeyCode::PAGE_UP:
-			pose.PosZ() -= d;
-			break;
-		case DVKeyCode::PAGE_DOWN:
-			pose.PosZ() += d;
-			break;
-		case 'f':
-			bForceFeedback = !bForceFeedback;
-			DSTR << "ForceFeedback: ";
-			if (bForceFeedback)
-			{
-				DSTR << "ON\n";
-			}
-			else
-			{
-				DSTR << "OFF\n";
-			}
+	case 't':
+		ptimer->Stop();
+		stopTimer = true;
+		break;
+	case 'r':
+		ptimer->Start();
+		break;
+	case ' ':
+		TimerFunc(pTimerID);
+		stopTimer = true;
+		break;
+	case 'u':
+		Vec3d g = phscene->GetGravity();
+		if (g.norm() <= 0.0001)
+			g = Vec3d(0.0, -9.8, 0.0);
+		else
+			g = Vec3d::Zero();
+		phscene->SetGravity(g);
+		std::cout << "g=" << g << std::endl;
+
 	}
 	grip.Step(pose, phscene->GetTimeStep());
 
 	for (Finger& finger : grip.fingers) {
 		finger.AddForce(grabForce); //
+		std::cout << "grabForce:" << grabForce << std::endl;
 	}
-	ptimer->Start();
+	if(!stopTimer)
+		ptimer->Start();
 }
 
 //draws the force graphic on the right of the screen
