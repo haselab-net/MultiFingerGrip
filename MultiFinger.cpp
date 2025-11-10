@@ -21,8 +21,6 @@ MultiFinger::MultiFinger(){
 	//this->myfile.open("c:\\tmp\\loco.csv");
 
 	displayGraphFlag = true;
-
-	logger = new Logger("log.csv");
 }
 
 //main function of the class
@@ -64,114 +62,14 @@ void MultiFinger::BuildScene(){
 	GetSdk()->SetDebugMode(true);
 
 	grip.Build(fwscene);
-
-
-	//GetSdk()->GetScene(i)->EnableRenderHaptic();
-	//hapscene = phscene->GetHapticEngine();
-	//hapscene->EnableHapticEngine(true);
-
-	//PHHapticEngineIf* he = phscene->GetHapticEngine();	// 力覚エンジンをとってくる
-	//PHHapticEngineDesc hd;
-	//he->EnableHapticEngine(true);						// 力覚エンジンの有効化
-	//he->SetHapticEngineMode(PHHapticEngineDesc::SINGLE_THREAD);
 	maxReach = 0.05;
 	this->nsolids = phscene->NSolids();
 	DSTR << "Nsolids: " << nsolids << std::endl;  //DEBUG
 	PHSolidIf **solidspnt = phscene->GetSolids();
-	/*
-	//set the objects that are going to be the Tools (BINOD)
-	fTool0 = phscene->FindObject("soTool0")->Cast();
-	fTool1 = phscene->FindObject("soTool1")->Cast();
-	fTool2 = phscene->FindObject("soTool2")->Cast();
-
-	defaultCenterPose.Pos() = Vec3d(0.0, 0.15, 0.0);
-
-	defaultPose1.Pos() = Vec3d(maxReach, 0.15, 0.0);
-	fTool0->SetMass(0.010);
-	fTool0->SetInertia(fTool0->GetShape(0)->CalcMomentOfInertia() * (float)(fTool0->GetMass() / fTool0->GetShape(0)->CalcVolume()));	// 慣性テンソルの設定
-
-	defaultPose2.Pos() = Vec3d(maxReach, -0.15, 0.0);
-	fTool1->SetMass(0.010);  //0.0005 original value
-	fTool1->SetInertia(fTool1->GetShape(0)->CalcMomentOfInertia() * (float)(fTool1->GetMass() / fTool1->GetShape(0)->CalcVolume()));	// 慣性テンソルの設定
 	
-	//Default pose for pointer 3
-	defaultPose3.Pos() = Vec3d(-maxReach, -0.15, 0.0);
-	fTool2->SetMass(0.010);  //0.0005 original value
-	fTool2->SetInertia(fTool2->GetShape(0)->CalcMomentOfInertia() * (float)(fTool2->GetMass() / fTool2->GetShape(0)->CalcVolume()));	// 慣性テンソルの設定
-	fTool0->SetGravity(false);
-	fTool1->SetGravity(false);
-	fTool2->SetGravity(false);
-	*/
-	//Used to locate the object in the right orientation, from Euler angles
-	//Quaterniond qq;
-	//qq.FromEuler(Vec3f(Radf(0.0f) , 0.0f, Radf(90.0f)));
-	//Posed pp = Posed(Vec3d(0,0,0), qq);
-	//DSTR << pp.OriW() << "," << pp.OriX() << "," << pp.OriY() << "," << pp.OriZ() << std::endl;
-
 	PHSolidIf *floor = phscene->FindObject("soCube")->Cast();
-	//floor->SetPose(Posed().Rot(Radf(90.0), 'z'));
-	/*fTool0->GetShape(0)->SetStaticFriction(1000.0f);
-	fTool1->GetShape(0)->SetStaticFriction(1000.0f);
-	fTool2->GetShape(0)->SetStaticFriction(1000.0f);
-	fTool0->GetShape(0)->SetDynamicFriction(1000.0f);
-	fTool1->GetShape(0)->SetDynamicFriction(1000.0f);
-	fTool2->GetShape(0)->SetDynamicFriction(1000.0f);
-	*/
 	floor->GetShape(0)->SetStaticFriction(0.4f);
 	
-	
-	//define jenga object properties
-	//fJenga1 = phscene->FindObject("soJenga1")->Cast();
-	//fJenga1->GetShape(0)->SetDensity(357.142f);  //non specific value try and error
-	//fJenga1->CompInertia();
-	//fJenga1->GetShape(0)->SetStaticFriction(0.7f);
-	//fJenga1->GetShape(0)->SetDynamicFriction(0.7f);
-	//DSTR << "jenga mass: " << fJenga1->GetMass() << std::endl;  //debug
-	//DSTR << "jenga volume: " << fJenga1->GetShape(0)->CalcVolume() << std::endl;  //debug
-
-	//fJenga2 = phscene->FindObject("soJenga2")->Cast();
-	//fJenga2->GetShape(0)->SetDensity(357.142);  //non specific value try and error
-	//fJenga2->CompInertia();
-	//fJenga2->GetShape(0)->SetStaticFriction(0.7);
-	//fJenga2->GetShape(0)->SetDynamicFriction(0.7);
-
-	//fJenga3 = phscene->FindObject("soJenga3")->Cast();
-	//fJenga3->GetShape(0)->SetDensity(357.142); //non specific value try and error
-	//fJenga3->CompInertia();
-	//fJenga3->GetShape(0)->SetStaticFriction(0.7);
-	//fJenga3->GetShape(0)->SetDynamicFriction(0.7);
-
-	//defining the cellphone density and mass
-	//fPhone = phscene->FindObject("soPhone")->Cast();
-	//fPhone->GetShape(0)->SetDensity(677);  // non specific value try and error
-	//fPhone->CompInertia();
-	//fPhone->GetShape(0)->SetStaticFriction(0.7f);
-	//fPhone->GetShape(0)->SetDynamicFriction(0.7f);
-	//DSTR << "phone mass: " << fPhone->GetMass() << std::endl;  //debug
-	//DSTR << "phone volume" << fPhone->GetShape(0)->CalcVolume() << std::endl;  //debug
-	
-	//defining the hammer density and mass
-	//fHammer = phscene->FindObject("soHammer")->Cast();
-	//fHammer->GetShape(0)->SetDensity(1500); //non specific value try and error  1012.25
-	//fHammer->GetShape(1)->SetDensity(244.90f);  //non specific value try and error
-	//fHammer->GetShape(0)->SetStaticFriction(0.70f);
-	//fHammer->GetShape(0)->SetDynamicFriction(0.7f);
-	//fHammer->GetShape(1)->SetStaticFriction(0.7f);
-	//fHammer->GetShape(1)->SetDynamicFriction(0.7f);
-	//fHammer->CompInertia();
-	//DSTR << "hammer mass: " << fHammer->GetMass() << std::endl;  //debug
-	//DSTR << "head volume: " << fHammer->GetShape(0)->CalcVolume() << std::endl;  //debug
-	//DSTR << "stick volume: " << fHammer->GetShape(1)->CalcVolume() << std::endl; //debug 
-
-	//aluminium block  mass and density  64cm^3 * iron density (7.87gr) = 200
-	//fAluminio = phscene->FindObject("soAluminio")->Cast();
-	//fAluminio->GetShape(0)->SetDensity(1355);  //non specific value try and error
-	//fAluminio->CompInertia();
-	//fAluminio->GetShape(0)->SetStaticFriction(0.7f);
-	//fAluminio->GetShape(0)->SetDynamicFriction(0.7f);
-	//DSTR << "aluminio vol: " << fAluminio->GetShape(0)->CalcVolume() << std::endl;  //debug
-	//DSTR << "aluminio mass: " << fAluminio->GetMass() << std::endl;   //debug
-	//GetSdk()->SaveScene("scene_.spr", (Spr::ImportIf*)import);
 }
 
 //Inits SPIDAR and calibrates the pointer position
@@ -235,137 +133,6 @@ void MultiFinger::InitHapticInterface(){
 }
 //void MultiFinger::MultiFingerStep(Vec3f* spidarForce)
 //{
-/*
-	double linSpring = (_stricmp(spidar->GetSpidarType(), "SpidarG6X4R") == 0 || _stricmp(spidar->GetSpidarType(), "SpidarG6X4L") == 0)
-		? 50 : 100; //1500;
-	double linDamper = 2;//5;     //3 my value
-	double rotSpring = 0.001;//10;      //torsional spring   original value 0.001
-	double rotDamper = 0.1 * 0.001; // 0.1*rotSpring;   //torsional damper  orignal values 0.1*rotSpring
-
-	Vec3d pos1 = fTool0->GetPose().Pos();
-	Vec3d pos2 = fTool1->GetPose().Pos();
-	Vec3d pos3 = fTool2->GetPose().Pos();
-	Vec3d vel1 = fTool0->GetVelocity();
-	Vec3d vel2 = fTool1->GetVelocity();
-	Vec3d vel3 = fTool2->GetVelocity();
-
-	Vec3d centerPos = Vec3d((pos1.X() + pos2.X() + pos3.X()) / 2, (pos1.Y() + pos2.Y() + pos3.Y()) / 2, (pos1.Z() + pos2.Z() + pos3.Z()) / 2);  //middle point between the solids
-	Vec3d Tooldistance1 = pos1 - centerPos;
-	Vec3d Tooldistance2 = pos2 - centerPos;  //distance from the middle point to the pointer
-	Vec3d Tooldistance3 = pos3 - centerPos; //third pointer middle point to the pointer.
-
-	Quaterniond spidarRot = spidar->GetOrientation();
-	Vec3d unitVectorX = (spidarRot * Vec3d(1, 0, 0)).unit();  //gets a X axis component of the spidar orientation
-	Posed devicePose1 = Posed(1, 0, 0, 0, Tooldistance1 * unitVectorX, 0, 0);   //gets the local orientation on X axis and match it with spidar orientation
-	Posed devicePose2 = Posed(1, 0, 0, 0, Tooldistance2 * unitVectorX, 0, 0);
-	Posed devicePose3 = Posed(1, 0, 0, 0, Tooldistance3 * unitVectorX, 0, 0);
-
-	Posed spidarPose = spidar->GetPose();
-	spidarPose.Pos() *= posScale;   //scales the spidar device position
-	Posed spidarPose1 = spidarPose * devicePose1;  //locate pointers accordingly to spidar position, on the local orientation axis
-	Posed spidarPose2 = spidarPose * devicePose2;
-	Posed spidarPose3 = spidarPose * devicePose3;
-	Vec3d spidarTooldistance1 = spidarPose1.Pos() - spidarPose.Pos();   //global distance between the pointers and the spidarposition (after scale)
-	Vec3d spidarTooldistance2 = spidarPose2.Pos() - spidarPose.Pos();
-	Vec3d spidarTooldistance3 = spidarPose3.Pos() - spidarPose.Pos();
-
-	Quaterniond rotationDelta1 = fTool0->GetOrientation() * spidarPose1.Ori().Inv(); //Mix orientation of the spidar pointer and the solids
-	Quaterniond rotationDelta2 = fTool1->GetOrientation() * spidarPose2.Ori().Inv();
-	Quaterniond rotationDelta3 = fTool2->GetOrientation() * spidarPose3.Ori().Inv();
-
-	Vec3d spidarVel = spidar->GetVelocity();
-	Vec3d spidarAngVel = spidar->GetAngularVelocity();
-	
-	//gets the pointer velocity
-	Vec3d spidarVel1 = spidarVel + (spidarAngVel % spidarTooldistance1); // spidar angular vel. cross product to pointer distance to the center, plus pointer velocity
-	Vec3d spidarVel2 = spidarVel + (spidarAngVel % spidarTooldistance2); // (Cross Multiplication (TO GET NORMAL VECTOR))
-	Vec3d spidarVel3 = spidarVel + (spidarAngVel % spidarTooldistance3); // (Cross Multiplication (TO GET NORMAL VECTOR))
-
-	//gets the rotation vector
-	Vec3d rotAngle1 = rotationDelta1.Rotation();
-	Vec3d rotAngle2 = rotationDelta2.Rotation();
-	Vec3d rotAngle3 = rotationDelta3.Rotation();
-
-	//Gets the lineal coupling force 
-	Vec3d couplingForce0 = (-linSpring * ((pos1 - defaultCenterPose.Pos()) - spidarPose1.Pos()) - linDamper * (vel1 - spidarVel1));
-	Vec3d couplingForce1 = (-linSpring * ((pos2 - defaultCenterPose.Pos()) - spidarPose2.Pos()) - linDamper * (vel2 - spidarVel2));
-	Vec3d couplingForce2 = (-linSpring * ((pos3 - defaultCenterPose.Pos()) - spidarPose3.Pos()) - linDamper * (vel3 - spidarVel3));
-	//total coupling force
-	Vec3d Fc = (couplingForce0 + couplingForce2 + couplingForce1);
-
-	spidar->SetForce(-Fc, 0);
-
-
-	//This if is always true
-
-	static int c = 0;
-	c++;
-
-	if (uartMotorDriver->NForce() > 0) {
-		for (size_t i = 0; i < uartMotorDriver->NForce(); ++i) {
-			//DSTR << uartMotorDriver->ReadForce((int)i) << ",";
-			//DSTR << std::endl;
-
-			//if (uartMotorDriver->ReadForce((int)i) <= 200) {
-
-				//grabforce1 = (double)(uartMotorDriver->ReadForce(1)/800 +0.2);
-			grabForce0 = (double)(uartMotorDriver->ReadForce(1) * 0.9814 - 155.8);
-			grabForce1 = (double)(uartMotorDriver->ReadForce(3) * 0.9814 - 134.6);
-			grabForce2 = (double)(- grabForce0 - grabForce1 + 10);
-			
-			//grabForce = (double)(uartMotorDriver->ReadForce((int)i) * -0.009914 + 2.1105);
-			//DSTR << "Force1: " << grabForce0 << "," << "Force2: " << grabForce1 << "," << "Force3: " << grabForce2 << ";";;
-			//DSTR << std::endl;
-
-			//}
-			//else {}
-		}
-	}
-	Vec3d grabforce0;
-	Vec3d grabforce1;
-	Vec3d grabforce2;
-
-	double distance = ((pos1 + pos2 + pos3) - (devicePose1 + devicePose2 + devicePose3)).norm() + 2; // need to calculate the constant values (2) here constant is (delta t/mi) where mi is the mass of the hands
-	if (grabForce0 && grabForce1 >= 20) {   //nearly 0.2 is the original values
-		if (distance < maxReach * 2) {	//	
-	//used to separate the pointers, once they had been in contact
-			grabforce0 = Tooldistance1.unit() * 0.1;
-			grabforce1 = Tooldistance2.unit() * 0.1;
-			grabforce2 = Tooldistance3.unit() * 0.1;
-
-		}
-		else {
-			//If the force is bellow the threshold value, then apply the force into the haptic pointers
-			grabforce0 = Tooldistance1.unit() * grabForce0;
-			grabforce1 = Tooldistance2.unit() * grabForce1;
-			grabforce2 = Tooldistance3.unit() * grabForce2;
-		}
-		// getting total force for coupling force calculations
-
-		//update the haptic pointers
-		fTool0->AddForce(grabforce0);
-		fTool1->AddForce(grabforce1);
-		fTool2->AddForce(grabforce2);
-		//This block displays the calculated force and torque in SPIDAR
-		//The ifs avoid displaying to much force on the haptic grip
-		float maxForce = 0.20f;
-		*spidarForce = couplingForce1 + couplingForce2 + couplingForce0;
-		/*
-		if (spidarForce->X() < 0)
-			spidarForce->X() = max(spidarForce->X(), -maxForce);
-		else
-			spidarForce->X() = min(spidarForce->X(), maxForce);
-
-		if (spidarForce->Y() < 0)
-			spidarForce->Y() = max(spidarForce->Y(), -maxForce);
-		else
-			spidarForce->Y() = min(spidarForce->Y(), maxForce);
-
-		if (spidarForce->Z() < 0)
-			spidarForce->Z() = max(spidarForce->Z(), -maxForce);
-		else
-			spidarForce->Z() = min(spidarForce->Z(), maxForce);
-	}*/
 //}
 
 void MultiFinger::InitCameraView(){
@@ -381,27 +148,7 @@ void MultiFinger::InitCameraView(){
 
 //Calibrates the position of the grip and both pointers
 void MultiFinger::calibrate() {	
-	/*
-	fTool0->SetFramePosition(defaultPose1.Pos());
-	fTool0->SetOrientation(spidar->GetOrientation());
-	fTool0->SetVelocity(Vec3d(0.0, 0.0, 0.0));
-	fTool0->SetAngularVelocity(Vec3d(0.0, 0.0, 0.0));
-
-	fTool1->SetFramePosition(defaultPose2.Pos());
-	fTool1->SetOrientation(spidar->GetOrientation());
-	fTool1->SetVelocity(Vec3d(0.0, 0.0, 0.0));
-	fTool1->SetAngularVelocity(Vec3d(0.0, 0.0, 0.0));
-
-	fTool2->SetFramePosition(defaultPose3.Pos());
-	fTool2->SetOrientation(spidar->GetOrientation());
-	fTool2->SetVelocity(Vec3d(0.0, 0.0, 0.0));
-	fTool2->SetAngularVelocity(Vec3d(0.0, 0.0, 0.0));
-
-	// Check this one (if only one or all pointers)
-	//fTool1->SetDynamical(true);
-	//fTool1->SetDynamical(true);
-	fTool2->SetDynamical(true);
-	*/spidar->Calibration();
+	spidar->Calibration();
 }
 
 //This multimedia thread handles the haptic (6DOF virtual coupling pointers) and physics simulation (Springhead)
@@ -468,27 +215,6 @@ void MultiFinger::TimerFunc(int id){
 		else {
 			spidar->SetForce(Vec3d(), Vec3d());
 		}
-		//DSTR << "Total = f:" << totalForce << " t:" << totalTorque << std::endl;
-
-		//	Following two lines fixs the tool[0] to see coupling force for debugging.
-		//	grip.fingers[0].tool->SetFramePosition(Vec3d(0.05, 0.2, 0));
-		//	grip.fingers[0].tool->SetVelocity(Vec3d(0, 0, 0));
-
-		//	show current and target position of slider joint 0.
-/*		for (int i = 0; i<grip.fingers.size(); ++i) {
-			DSTR << "Slider" << i << " pos:" << grip.fingers[i].slider->GetPosition()
-				<< " target:" << grip.fingers[i].slider->GetTargetPosition()
-				<< " length:" << grip.fingers[i].length << std::endl;
-		}*/
-		/*
-		for (Finger& finger : grip.fingers) {
-			Vec3d f, t;
-			finger.slider->GetConstraintForce(f, t);
-			DSTR << "Slider" << finger.GetIndex() << " vel:" << finger.tool->GetVelocity() << finger.tool->GetAngularVelocity() << std::endl;
-			DSTR << " pos:" << finger.tool->GetCenterPosition() << finger.tool->GetOrientation().RotationHalf() << " f:" << f << " t:" << t << std::endl;
-		}
-		*/
-
 		PHSolidIf* tool = grip.fingers[0].tool;
 		PHSolidIf* target = phscene->FindObject("soAluminioLight")->Cast();
 		//cout << "soAluminioLight:" << target->GetMass() << std::endl;
@@ -501,43 +227,6 @@ void MultiFinger::TimerFunc(int id){
 			if (cp->GetSocketSolid() == tool && cp->GetPlugSolid() == target ||
 				cp->GetSocketSolid() == target && cp->GetPlugSolid() == tool) {
 
-				// when the tool contacts to target, timer stops
-				//ptimer->Stop();
-				
-				static unsigned long contactDuration = 0;	// [ms]
-				logger->addData("t", (double)(contactDuration));
-				
-				Vec2d z = p->GetLuGreZ();
-				logger->addData("z.x", z.x, 0.01, -0.01);
-				logger->addData("z.y", z.y, 0.01, -0.01);
-				Vec2d dz = p->GetLuGreDZ();
-				logger->addData("dz.x", dz.x, 0.1, -0.1);
-				logger->addData("dz.y", dz.y, 0.1, -0.1);
-			
-				Vec2d v = p->GetLuGreV();
-				logger->addData("v.x", v.x, 1, -1);
-				logger->addData("v.y", v.y, 1, -1);
-
-				Vec3d f, t;
-				cp->GetConstraintForce(f, t);
-				logger->addData("f.x", f.x);
-				logger->addData("f.y", f.y);
-				logger->addData("f.z", f.z);
-
-				Vec3d targetPose = target->GetCenterPosition();
-				logger->addData("pose.x", targetPose.x);
-				logger->addData("pose.y", targetPose.y);
-				logger->addData("pose.z", targetPose.z);
-
-				Vec3d vv, vw;
-				cp->GetRelativeVelocity(vv, vw);
-				logger->addData("rv.x", vv.x);
-				logger->addData("rv.y", vv.y);
-				logger->addData("rv.z", vv.z);
-				std::cout << vv << std::endl;
-
-				logger->writeData();
-				contactDuration += (unsigned long)(1000.0*pdt);
 			}
 		}
 		spidar->Update(pdt);  //updates the forces displayed in SPIDAR
@@ -798,5 +487,5 @@ void MultiFinger::resetObjects(){
 }
 
 void MultiFinger::IdleFunc() {
-	logger->saveRecord();
+
 }

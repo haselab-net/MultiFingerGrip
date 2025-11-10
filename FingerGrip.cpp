@@ -25,11 +25,11 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	shapeDesc.material.mu = shapeDesc.material.mu0 = 1.0;
 	shapeDesc.material.rotationFriction = 0.0f;
 	shapeDesc.material.frictionModel = 1;
-	shapeDesc.material.bristlesSpringK = 4000.0;	//	1000N/m
-	shapeDesc.material.bristlesDamperD = 5.0;	//	0.1Ns/m
-	shapeDesc.material.bristlesViscosityV = 0.6;	//	0.1Ns/m
+	shapeDesc.material.bristlesSpringK = 1000.0;	//	1000N/m
+	shapeDesc.material.bristlesDamperD = 1.0;	//	0.1Ns/m
+	shapeDesc.material.bristlesViscosityV = 0.1;	//	0.1Ns/m
 	shapeDesc.material.timeVaryFrictionA = .2;
-	shapeDesc.material.timeVaryFrictionB = .6;
+	shapeDesc.material.timeVaryFrictionB = .7;
 	shapeDesc.material.timeVaryFrictionC = 400.0;
 	//shapeDesc.material.frictionModel = FrictionModel::COULOMB;
 	//tool = fwScene->GetPHScene()->CreateSolid();
