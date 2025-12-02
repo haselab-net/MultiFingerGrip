@@ -20,7 +20,7 @@ MultiFinger::MultiFinger(){
 	//Inits the debug CSV file
 	//this->myfile.open("c:\\tmp\\loco.csv");
 
-	displayGraphFlag = true;
+	displayGraphFlag = false;
 }
 
 //main function of the class
@@ -73,14 +73,14 @@ void MultiFinger::BuildScene(){
 }
 
 //Inits SPIDAR and calibrates the pointer position
-void MultiFinger::InitHapticInterface(){
+void MultiFinger::InitHapticInterface() {
 	HISdkIf* hiSdk = GetSdk()->GetHISdk();
 
 	bool bFoundCy = false;
-	if (humanInterface == SPIDAR){
+	if (humanInterface == SPIDAR) {
 		// x64
 		DRCyUsb20Sh4Desc cyDesc;
-		for (int i = 0; i<10; ++i){
+		for (int i = 0; i < 10; ++i) {
 			cyDesc.channel = i;
 			DRCyUsb20Sh4If* cy = hiSdk->AddRealDevice(DRCyUsb20Sh4If::GetIfInfoStatic(), &cyDesc)->Cast();
 			if (cy && cy->NChildObject()) {
@@ -110,26 +110,29 @@ void MultiFinger::InitHapticInterface(){
 		spidar->Calibration();
 		spidar = spidar->Cast();
 	}
-	else if (humanInterface == XBOX){
+	else if (humanInterface == XBOX) {
 		spidar = hiSdk->CreateHumanInterface(HIXbox360ControllerIf::GetIfInfoStatic())->Cast();
 	}
-	else if (humanInterface == FALCON){
+	else if (humanInterface == FALCON) {
 		spidar = hiSdk->CreateHumanInterface(HINovintFalconIf::GetIfInfoStatic())->Cast();
 		spidar->Init(NULL);
 	}
 	else {
 
 	}
-	/*//The port is 3 because the sensor is connected to the port 3 on the Spidar's AD Converter
+	/*
+	//The port is 3 because the sensor is connected to the port 3 on the Spidar's AD Converter
 	if (bFoundCy) {
 		flexiforce = hiSdk->RentVirtualDevice(DVAdIf::GetIfInfoStatic(), "", 3)->Cast();
 	}
 	else {
 		flexiforce = hiSdk->RentVirtualDevice(DVAdIf::GetIfInfoStatic(), "", 2)->Cast();
 	}
+	
 	if (flexiforce && 1700 < flexiforce->Digit() && flexiforce->Digit() < 1900) {
 		flexiforce = NULL;
-	}*/
+	}
+	*/
 }
 //void MultiFinger::MultiFingerStep(Vec3f* spidarForce)
 //{
@@ -163,7 +166,9 @@ void MultiFinger::TimerFunc(int id){
 			DWORD now = timeGetTime();
 			if (now - lastCounted > 1000) {
 			float cps = (float)(cycle) / (float)(now - lastCounted) * 1000.0f;
-			std::cout << cps << std::endl;
+			std::cout << "cps:" << cps << std::endl;
+			if(flexiforce)
+				std::cout << "flexiforce:"  << flexiforce->Voltage() << std::endl;
 			lastCounted = now;
 			cycle = 0;
 			int a = 0;
@@ -183,14 +188,48 @@ void MultiFinger::TimerFunc(int id){
 			// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
 			float volts = flexiforce->Voltage();
 			double offset = 1.0; // grabForce == 0 ‚Æ‚È‚éˆÊ’u‚ð‚¸‚ç‚·
-			grabForce = (volts * -2.4914 + 4.4105) - offset;
+			grabForce = (2.0*volts) - offset;
 			if (c % 1000 == 0) {
 				DSTR << "grabforce: " << grabForce << std::endl;
 			}
 		}
-		//grip.Step(pose, phscene->GetTimeStep());	//	this will be actual code.
+		grip.Step(pose, phscene->GetTimeStep());	//	this will be actual code.
 
 		Vec3d totalForce, totalTorque;
+		double vib = 0.0f;
+		PHSolidIf* tool = grip.fingers[0].tool;
+		PHSolidIf* target = phscene->FindObject("soAluminioLight")->Cast();
+		//cout << "soAluminioLight:" << target->GetMass() << std::endl;
+		bool bswap = false;
+		PHSolidPairForLCPIf* sp = phscene->GetSolidPair(tool, target, bswap);
+		PHShapePairForLCPIf* p = sp->GetShapePair(0, 0);
+		PHContactPointIf* cp = nullptr;
+		for (int i = 0; i < phscene->NContacts(); i++) {
+			cp = phscene->GetContact(i);
+
+			if (cp->GetSocketSolid() == tool || cp->GetPlugSolid() == tool){
+			//if (cp->GetSocketSolid() == tool && cp->GetPlugSolid() == target ||
+				//cp->GetSocketSolid() == target && cp->GetPlugSolid() == tool) {
+				double T = cp->GetLuGreT();
+				Vec3d slip = cp->GetLuGreVS();
+				static double T_p = 0.0f;
+
+				double dT = (T - T_p) / pdt;
+				if (dT > 0.0f) {
+					dT = 0.0f;
+				}
+				const double fa1 = 20.0f;
+				const double fa2 = 200.0f;
+				const double A1 = 0.1f;
+				const double A2 = 5.0f;
+				dT = min(-dT, 3.0f);
+				double slipd = min(slip.norm(), 1.0f);
+				double t = phscene->GetCount() * pdt;
+				vib = A1 * dT * sin(2.0f * M_PI * fa1 * t) + A2 * slipd * sin(2.0f * M_PI * fa2 * t);
+				totalForce.y += vib;
+				//std::cout << dT << "," << slipd << std::endl;
+			}
+		}
 		for (Finger& finger : grip.fingers) {
 
 			finger.AddForce(grabForce);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
@@ -215,20 +254,7 @@ void MultiFinger::TimerFunc(int id){
 		else {
 			spidar->SetForce(Vec3d(), Vec3d());
 		}
-		PHSolidIf* tool = grip.fingers[0].tool;
-		PHSolidIf* target = phscene->FindObject("soAluminioLight")->Cast();
-		//cout << "soAluminioLight:" << target->GetMass() << std::endl;
-		bool bswap = false;
-		PHSolidPairForLCPIf* sp = phscene->GetSolidPair(tool, target, bswap);
-		PHShapePairForLCPIf* p = sp->GetShapePair(0, 0);
-		PHContactPointIf* cp = nullptr;
-		for (int i = 0; i < phscene->NContacts(); i++) {
-			cp = phscene->GetContact(i);
-			if (cp->GetSocketSolid() == tool && cp->GetPlugSolid() == target ||
-				cp->GetSocketSolid() == target && cp->GetPlugSolid() == tool) {
 
-			}
-		}
 		spidar->Update(pdt);  //updates the forces displayed in SPIDAR
 		//MultiFingerStep(&spidarForce);  //This function computes the lineal and rotational couplings value
 		//spidar->SetForce(-spidarForce);  //This function set the force 
@@ -336,6 +362,7 @@ void MultiFinger::Keyboard(int key, int x, int y){
 		{
 			DSTR << "OFF\n";
 		}
+		break;
 	case 't':
 		ptimer->Stop();
 		stopTimer = true;
@@ -397,42 +424,17 @@ void MultiFinger::displayGraph(GRRenderIf* render)
 	render->SetViewMatrix(view);
 }
 
-//Used to graphically debug the program
-void MultiFinger::Display() 
+void MultiFinger::Display()
 {
-
-
-	FWWinIf* win = GetCurrentWin();
-	FWSceneIf* scene = win->GetScene();
-	GRRenderIf* render = win->GetRender();
-
-	HITrackballIf* trackball = win->GetTrackball();
-	if (!scene)
-		return;
-
-	if (!scene->GetGRScene() || !scene->GetGRScene()->GetCamera() || !scene->GetGRScene()->GetCamera()->GetFrame()) {
-		render->SetViewMatrix(trackball->GetAffine().inv());
-	}
-	scene->Sync();
-
-	render->ClearBuffer();
-	render->BeginScene();
-	scene->Draw(render, win->GetDebugMode());
-	logger->drawGraph(render);
-
-	render->EndScene();
-	render->SwapBuffers();
-	/*
 	GRRenderIf* render = GetSdk()->GetRender();
 
-	if (displayGraphFlag){
+	if (displayGraphFlag) {
 		displayGraph(render);
 	}
 
-	logger.drawGraph(render);
 	FWApp::Display();
-	*/
 }
+
 
 
 void MultiFinger::AtExit(){
