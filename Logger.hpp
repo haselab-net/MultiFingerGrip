@@ -5,14 +5,35 @@
 #include <Framework/SprFWConsoleDebugMonitor.h>
 #include <vector>
 #include <map>
+#include <direct.h>
+
+#include "conditions.hpp"
 
 using namespace Spr;
 class Logger {
 public:
 	Logger() {
 		logFile = nullptr;
+		SYSTEMTIME st;
+		GetLocalTime(&st);
+		char buf[256];
+		sprintf_s(buf, "log_%04d%02d%02d_%02d%02d%02d/",
+			st.wYear, st.wMonth, st.wDay,
+			st.wHour, st.wMinute, st.wSecond);
+		dir_name = buf;
 		memset(&condition, 0, sizeof(Condition));
 		memset(&data, 0, sizeof(LogData));
+		count = 0;
+		int res = _mkdir(dir_name.c_str());
+	}
+
+	Logger(std::string directory) {
+		logFile = nullptr;
+		dir_name = directory;
+		if (dir_name.back() != '/' && dir_name.back() != '\\') {
+			dir_name += "/";
+		}
+		int res = _mkdir(dir_name.c_str());
 	}
 
 	void saveSample() {
@@ -21,20 +42,18 @@ public:
 
 	void open(std::string filename = "") {
 		if (filename == "") {
-			SYSTEMTIME st;
-			GetLocalTime(&st);
-			char buf[256];
-			sprintf_s(buf, "log_%04d%02d%02d_%02d%02d%02d.bin",
-				st.wYear, st.wMonth, st.wDay,
-				st.wHour, st.wMinute, st.wSecond);
-			filename = buf;
+			filename = std::to_string(count) + ".bin";
 		}
+		else {
+			filename = std::to_string(count) + "_" + filename + ".bin";
+		}
+		count++;
 
 		if (logFile) {
 			close();
 		}
 
-		fopen_s(&logFile, filename.c_str(), "wb");
+		fopen_s(&logFile,(dir_name + filename).c_str(), "wb");
 
 		if (!logFile) {
 			throw std::runtime_error("Failed to open log file");
@@ -51,24 +70,7 @@ public:
 		}
 	}
 
-	struct Condition {
-		unsigned int friction_model; // 1: Lugre, 0: Coulomb
-		union {
-			struct {
-				double sigma0;
-				double sigma1;
-				double sigma2;
-				double A;
-				double B;
-				double C;
-			}lugre;
-			struct {
-				double mu0;
-				double mu;
-			}coulomb;
-		};
-		double mass;
-	}condition;
+	Condition condition;
 
 	struct LogData {
 		unsigned long t;
@@ -91,4 +93,6 @@ public:
 private:
 
 	FILE* logFile;
+	std::string dir_name;
+	int count;
 };
