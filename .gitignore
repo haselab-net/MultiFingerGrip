@@ -4,4 +4,6 @@
 *.opendb
 16.0/
 15.0/
+17.0/
 *.vcxproj.user
+.vs/
