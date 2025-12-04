@@ -5,146 +5,90 @@
 #include <Framework/SprFWConsoleDebugMonitor.h>
 #include <vector>
 #include <map>
-#include <fstream>
 
 using namespace Spr;
-
-
-
 class Logger {
 public:
-	Logger(std::string filename, unsigned int _maxSample = 1000) : logfile(filename), maxSample(_maxSample), buffer(_maxSample), newLabel(false) {
+	Logger() {
+		logFile = nullptr;
+		memset(&condition, 0, sizeof(Condition));
+		memset(&data, 0, sizeof(LogData));
 	}
 
-	void addData(std::string label, double value, double max = 1.0, double min = 2.0) {
-		auto s = index.find(label);
-		if (s == index.end()) {
-			// new data
-			int i = index.size();
-			index[label] = i;
-			labels.push_back(label);
-			sample.push_back(0);
-			setRange(label, max, min);
-			newLabel = true;
+	void saveSample() {
+		fwrite(&data, sizeof(LogData), 1, logFile);
+	}
+
+	void open(std::string filename = "") {
+		if (filename == "") {
+			SYSTEMTIME st;
+			GetLocalTime(&st);
+			char buf[256];
+			sprintf_s(buf, "log_%04d%02d%02d_%02d%02d%02d.bin",
+				st.wYear, st.wMonth, st.wDay,
+				st.wHour, st.wMinute, st.wSecond);
+			filename = buf;
 		}
-		sample[index[label]] = value;
 
-	}
-
-	void writeData() {
-		if (newLabel) {
-			saveLabel();
-			newLabel = false;
+		if (logFile) {
+			close();
 		}
-		buffer.Write(sample);
-	}
 
-	void setRange(std::string label, double max, double min) {
-		rangeMax[label] = max;
-		rangeMin[label] = min;
-	}
+		fopen_s(&logFile, filename.c_str(), "wb");
 
-	void drawGraph(GRRenderIf* r, unsigned int length = 2000) {
-		/*
-		r->PushProjectionMatrix();
-		r->SetProjectionMatrix(Affinef::OrthoGL(Vec3f(0, 0, 10), Vec2f(2, 2), -10, 10));
-		Affinef af;
-		af.Ey() *= -1;
-		af.Ex() *= -1;
-		r->SetViewMatrix(af);
-		r->SetModelMatrix(Affinef());
-		r->SetDepthTest(false);
-		r->SetLighting(false);
-
-		const float dx = 0.001f;
-		const float h = 0.25f; // Height of the graph
-		float y0 = -1 + h;
-		int sampleLength = 0;
-		if (samples.size())
-			sampleLength = samples.begin()->second.size(); // Size of first data column
-		if (sampleLength >= 10) {
-			int t0 = 0;
-			if (sampleLength < length) {
-				length = sampleLength;
-			}
-			else {
-				t0 = sampleLength - length;
-			}
-
-
-			float graphYoffset = -0.7;
-			for (auto itr = samples.begin(); itr != samples.end(); ++itr) {
-				std::string label = itr->first;
-				std::vector<double> value = itr->second;
-
-				// Calculate scale of graph
-				float min, max;
-				min = rangeMin[label];
-				max = rangeMax[label];
-				if (min > max) {
-					// Auto Range
-					min = *min_element(value.end() - length, value.end());
-					max = *max_element(value.end() - length, value.end());
-				}
-				else {
-					// Fixed Range
-
-				}
-				float scale = h / (max - min);
-
-				int tStart = 0;
-
-				// Draw axes
-				float yAxis = -(max + min) / 2.0 * scale + graphYoffset;
-				r->DrawLine(Vec3f(-1.0, yAxis, 0.0), Vec3f(1.0, yAxis, 0.0));	// horizontal
-				r->DrawLine(Vec3f(-0.99, graphYoffset + h * 0.55, 0), Vec3f(-0.99, graphYoffset - h * 0.55, 0.0)); // virtical
-				r->DrawLine(Vec3f(-0.999, graphYoffset + h / 2.0, 0), Vec3f(-0.98, graphYoffset + h / 2.0, 0.0)); // max
-				r->DrawFont(Vec3f(-0.98, graphYoffset + h / 1.7, 0), std::to_string(max));
-				r->DrawLine(Vec3f(-0.999, graphYoffset - h / 2.0, 0), Vec3f(-0.98, graphYoffset - h / 2.0, 0.0)); // min
-				r->DrawFont(Vec3f(-0.98, graphYoffset - h / 1.7, 0), std::to_string(min));
-				// Legend
-				r->DrawFont(Vec3f(-0.95, graphYoffset - h / 1.5, 0), label);
-				for (int t = 0; t < length - 2; t++) {
-					float x = -0.99;
-					r->DrawLine(Vec3f(x + t * dx, value[t + t0] * scale + yAxis, 0), Vec3f(x + (t + 1) * dx, value[t + t0 + 1] * scale + yAxis, 0));
-				}
-				graphYoffset += h * 1.5;
-			}
-
-			//r->DrawFont(Vec3f(-1, 0.95f, 0), os.str());
+		if (!logFile) {
+			throw std::runtime_error("Failed to open log file");
 		}
-		r->PopProjectionMatrix();
-		*/
-	}
-
-	void startRecord() {
-	}
-
-	void saveRecord() {
-		std::vector<double> rec;
-		while (buffer.Read(rec)) {
-			logfile << std::endl;
-			for (int i = 0; i < rec.size(); i++) {
-				logfile << std::scientific << rec[i] << ',';
-			}
+		else {
+			fwrite(&condition, sizeof(Condition), 1, logFile);
 		}
 	}
 
-	void saveLabel() {
-		logfile << std::endl;;
-		for (auto itr = labels.begin(); itr != labels.end(); ++itr) {
-			logfile <<  *itr << ',';
+	void close() {
+		if (logFile) {
+			fclose(logFile);
+			logFile = nullptr;
 		}
 	}
+
+	struct Condition {
+		unsigned int friction_model; // 1: Lugre, 0: Coulomb
+		union {
+			struct {
+				double sigma0;
+				double sigma1;
+				double sigma2;
+				double A;
+				double B;
+				double C;
+			}lugre;
+			struct {
+				double mu0;
+				double mu;
+			}coulomb;
+		};
+		double mass;
+	}condition;
+
+	struct LogData {
+		unsigned long t;
+		double load_pos[3];
+		double pointer_pos[3];
+		double grip_force;
+
+		// Friction State
+		double lugre_z[2];
+		double lugre_dz[2];
+		double lugre_v[2];
+		double lugre_T;
+		bool is_static_friction;
+
+		double friction_force;
+		double vibration_force;
+
+	}data;
 
 private:
-	const unsigned int maxSample;
 
-	std::map<std::string, int> index;
-	std::vector<std::string> labels;
-	std::vector<double> sample;
-	std::map<std::string, double > rangeMax, rangeMin;
-	std::ofstream logfile;
-	bool newLabel;
-	RingBuffer<std::vector<double>> buffer;
+	FILE* logFile;
 };
