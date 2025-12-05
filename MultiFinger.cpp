@@ -6,7 +6,7 @@
 #include <HumanInterface/SprHIKeyMouse.h>
 #include <Foundation/SprUTQPTimer.h>
 #include <iomanip>
-#include "logger.hpp"
+#include "Logger.hpp"
 
 
 //Constructor 
@@ -21,6 +21,7 @@ MultiFinger::MultiFinger(){
 	//this->myfile.open("c:\\tmp\\loco.csv");
 
 	displayGraphFlag = false;
+	logger = new Logger();
 }
 
 //main function of the class
@@ -69,6 +70,7 @@ void MultiFinger::BuildScene(){
 	
 	PHSolidIf *floor = phscene->FindObject("soCube")->Cast();
 	floor->GetShape(0)->SetStaticFriction(0.4f);
+	SetNext();
 	
 }
 
@@ -178,20 +180,18 @@ void MultiFinger::TimerFunc(int id){
 		UTAutoLock LOCK(displayLock);
 
 		phscene->Step();  //springhead physics step
-		
+		double a_vib = 0.0f;
 		Posed pose = spidar->GetPose();
 		pose.Pos() = pose.Pos()*4;
 		pose.PosY() += 0.07;
+		static int c = 0;
+		c++;
 		if (flexiforce) {
-			static int c = 0;
-			c++;
 			// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
 			float volts = flexiforce->Voltage();
 			double offset = 1.0; // grabForce == 0 ‚Æ‚È‚éˆÊ’u‚ð‚¸‚ç‚·
 			grabForce = (2.0*volts) - offset;
-			if (c % 1000 == 0) {
-				DSTR << "grabforce: " << grabForce << std::endl;
-			}
+
 		}
 		grip.Step(pose, phscene->GetTimeStep());	//	this will be actual code.
 
@@ -204,6 +204,7 @@ void MultiFinger::TimerFunc(int id){
 		PHSolidPairForLCPIf* sp = phscene->GetSolidPair(tool, target, bswap);
 		PHShapePairForLCPIf* p = sp->GetShapePair(0, 0);
 		PHContactPointIf* cp = nullptr;
+		double dT = 0.0f;
 		for (int i = 0; i < phscene->NContacts(); i++) {
 			cp = phscene->GetContact(i);
 
@@ -214,21 +215,49 @@ void MultiFinger::TimerFunc(int id){
 				Vec3d slip = cp->GetLuGreVS();
 				static double T_p = 0.0f;
 
-				double dT = (T - T_p) / pdt;
+				dT = (T - T_p) / pdt;
 				if (dT > 0.0f) {
 					dT = 0.0f;
 				}
-				const double fa1 = 20.0f;
+				const double fa1 = 30.0f;
 				const double fa2 = 200.0f;
-				const double A1 = 0.1f;
+				const double A1 = 1.0/1.5f;
 				const double A2 = 5.0f;
-				dT = min(-dT, 3.0f);
-				double slipd = min(slip.norm(), 1.0f);
+				dT = min(-A1 * dT, 3.0f);
+				double slipd = min(A2 * slip.norm(), 3.0f);
 				double t = phscene->GetCount() * pdt;
-				vib = A1 * dT * sin(2.0f * M_PI * fa1 * t) + A2 * slipd * sin(2.0f * M_PI * fa2 * t);
+				vib =  A1 * dT * sin(2.0f * M_PI * fa1 * t) + A2 * slipd * sin(2.0f * M_PI * fa2 * t);
 				totalForce.y += vib;
 				//std::cout << dT << "," << slipd << std::endl;
+				T_p = T;
+
+				// Logging
+				Logger::LogData data;
+				data.t = phscene->GetCount();
+				data.load_pos[0] = target->GetPose().PosX();
+				data.load_pos[1] = target->GetPose().PosY();
+				data.load_pos[2] = target->GetPose().PosZ();
+				data.pointer_pos[0] = grip.pose.PosX();
+				data.pointer_pos[1] = grip.pose.PosY();
+				data.pointer_pos[2] = grip.pose.PosZ();
+				data.grip_force = grabForce;
+				data.lugre_T = cp->GetLuGreT();
+				data.lugre_v[0] = cp->GetLuGreV()[0];
+				data.lugre_v[1] = cp->GetLuGreV()[1];
+				data.lugre_dz[0] = cp->GetLuGreDZ()[0];
+				data.lugre_dz[1] = cp->GetLuGreDZ()[1];
+				data.lugre_z[0] = cp->GetLuGreZ()[0];
+				data.lugre_z[1] = cp->GetLuGreZ()[1];
+				Vec3d cf, ct;
+				cp->GetConstraintForce(cf, ct);
+				logger->data.friction_force = cf.norm();
+				logger->saveSample();
+
 			}
+		}
+		if (c % 10 == 0) {
+			DSTR << "grabforce: " << grabForce << ", dT" << dT << std::endl;
+
 		}
 		for (Finger& finger : grip.fingers) {
 
@@ -297,6 +326,9 @@ void MultiFinger::Keyboard(int key, int x, int y){
 		calibrate();
 	}
 			break;
+	case '^':
+		SetNext();
+		break;
 	case 'd': {
 		if (displayGraphFlag) {
 			displayGraphFlag = false;
@@ -445,11 +477,16 @@ void MultiFinger::AtExit(){
 // Initialize the position of the objects in the scene
 void MultiFinger::resetObjects(){
 
-	int randAngle;
-	randAngle = rand() % (360 + 1);
-
 	Quaterniond qq;
 	Posed ptmp;
+	PHSolidIf* target = phscene->FindObject("soAluminioLight")->Cast();
+	target->SetVelocity(Vec3d());
+	qq.FromEuler(Vec3f(Radf(0.0f), Radf(180.0f), 0.0f));
+	ptmp = Posed(Vec3d(0.0f, 0.035f, 0.0f), qq);
+	target->SetPose(ptmp);
+	/*
+	int randAngle;
+	randAngle = rand() % (360 + 1);
 
 	//left jenga
 	fJenga1->SetVelocity(Vec3d());
@@ -486,8 +523,52 @@ void MultiFinger::resetObjects(){
 	qq.FromEuler(Vec3f(Radf(0.0f), Radf(180.0f), 0.0f));
 	ptmp = Posed(Vec3d(0.0f, 0.025f, -0.1f), qq);
 	fAluminio->SetPose(ptmp);
+	*/
 }
 
 void MultiFinger::IdleFunc() {
+
+}
+
+void MultiFinger::SetNext() {
+	// Close Current Log File
+	logger->close();
+	// Get Next Condition
+	Condition c;
+	if (rand() % 2) {
+		c = con_lugre;
+	}
+	else {
+		c = con_coulomb;
+	}
+
+	logger->condition = c;
+
+	// Set material
+	PHMaterial mat;
+	mat.frictionModel = c.friction_model;
+	if (mat.frictionModel == 1) {
+		// LuGre
+		mat.bristlesSpringK = c.lugre.sigma0;
+		mat.bristlesDamperD = c.lugre.sigma1;
+		mat.bristlesViscosityV = c.lugre.sigma2;
+		mat.timeVaryFrictionA = c.lugre.A;
+		mat.timeVaryFrictionB = c.lugre.B;
+		mat.timeVaryFrictionC = c.lugre.C;
+		logger->open("Lugre");
+		std::cout << "Lugre Condition Set" << std::endl;
+
+	}
+	else {
+		// Coulomb
+		mat.mu = c.coulomb.mu;
+		mat.mu0 = c.coulomb.mu0;
+		logger->open("Coulomb");
+		std::cout << "Coulomb Condition Set" << std::endl;
+	}
+
+	grip.SetMaterial(mat);
+
+	resetObjects();
 
 }

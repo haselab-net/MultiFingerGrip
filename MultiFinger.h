@@ -69,6 +69,8 @@ public: //Local Properties
 	virtual void AtExit();  //used to close the debug file
 	void MultiFinger::MultiFingerStep(Vec3f* spidarForce);
 	
+	void SetNext();
+
 	//phsolid objects assigned during buildscene()
 	PHSolidIf *fPhone;
 	//Binod Define phsolid objects

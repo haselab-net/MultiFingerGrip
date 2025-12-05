@@ -28,6 +28,11 @@ public:
 		maxLength = l;
 	}
 	void Build(FWSceneIf* fwScene, PHSolidIf* gripTool);
+
+	void SetMaterial(const PHMaterial mat) {
+		tool->GetShape(0)->SetMaterial(mat);
+	}
+
 protected:
 	void LimitLength() {
 		if (length > maxLength) {
@@ -48,6 +53,11 @@ public:
 	void Step(Posed p, double dt);
 	FingerGrip();
 	void Build(FWSceneIf* fwScene);
+	void SetMaterial(const PHMaterial mat) {
+		for (auto& f : fingers) {
+			f.SetMaterial(mat);
+		}
+	}
 };
 
 #endif
