@@ -70,6 +70,8 @@ void MultiFinger::BuildScene(){
 	
 	PHSolidIf *floor = phscene->FindObject("soCube")->Cast();
 	floor->GetShape(0)->SetStaticFriction(0.4f);
+
+	target = phscene->FindObject("soAluminioLight")->Cast();
 	SetNext();
 	
 }
@@ -198,7 +200,6 @@ void MultiFinger::TimerFunc(int id){
 		Vec3d totalForce, totalTorque;
 		double vib = 0.0f;
 		PHSolidIf* tool = grip.fingers[0].tool;
-		PHSolidIf* target = phscene->FindObject("soAluminioLight")->Cast();
 		//cout << "soAluminioLight:" << target->GetMass() << std::endl;
 		bool bswap = false;
 		PHSolidPairForLCPIf* sp = phscene->GetSolidPair(tool, target, bswap);
@@ -286,7 +287,8 @@ void MultiFinger::TimerFunc(int id){
 				data.lugre_z[1] = cp->GetLuGreZ()[1];
 				Vec3d cf, ct;
 				cp->GetConstraintForce(cf, ct);
-				logger->data.friction_force = cf.norm();
+				logger->data.friction_force = Vec2d(cf[1], cf[2]).norm();
+				logger->data.vibration_force = vib;
 				logger->saveSample();
 
 			}
@@ -515,7 +517,6 @@ void MultiFinger::resetObjects(){
 
 	Quaterniond qq;
 	Posed ptmp;
-	PHSolidIf* target = phscene->FindObject("soAluminioLight")->Cast();
 	target->SetVelocity(Vec3d());
 	qq.FromEuler(Vec3f(Radf(0.0f), Radf(180.0f), 0.0f));
 	ptmp = Posed(Vec3d(0.0f, 0.035f, 0.0f), qq);
@@ -592,7 +593,7 @@ void MultiFinger::SetNext() {
 		mat.timeVaryFrictionB = c.lugre.B;
 		mat.timeVaryFrictionC = c.lugre.C;
 		logger->open("Lugre");
-		std::cout << "Lugre Condition Set" << std::endl;
+		std::cout << "<<<< Lugre Condition Set >>>>" << std::endl;
 
 	}
 	else {
@@ -600,7 +601,7 @@ void MultiFinger::SetNext() {
 		mat.mu = c.coulomb.mu;
 		mat.mu0 = c.coulomb.mu0;
 		logger->open("Coulomb");
-		std::cout << "Coulomb Condition Set" << std::endl;
+		std::cout << "<<<< Coulomb Condition Set >>>>" << std::endl;
 	}
 
 	grip.SetMaterial(mat);

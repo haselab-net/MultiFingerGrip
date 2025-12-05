@@ -46,7 +46,7 @@ public: //Local Properties
 	PHHapticEngineIf* hapscene;
 	DVAdIf* flexiforce;
 	GRLightDesc ld;    //lights used to draw letters and the force grap in the screen
-
+	PHSolidIf* target;
 	std::vector<float> stickSlipTime;
 
 	UTRef<UTTimerIf> ptimer;
