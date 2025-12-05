@@ -205,31 +205,67 @@ void MultiFinger::TimerFunc(int id){
 		PHShapePairForLCPIf* p = sp->GetShapePair(0, 0);
 		PHContactPointIf* cp = nullptr;
 		double dT = 0.0f;
+		double t = phscene->GetCount() * pdt;
 		for (int i = 0; i < phscene->NContacts(); i++) {
 			cp = phscene->GetContact(i);
-
 			if (cp->GetSocketSolid() == tool || cp->GetPlugSolid() == tool){
 			//if (cp->GetSocketSolid() == tool && cp->GetPlugSolid() == target ||
 				//cp->GetSocketSolid() == target && cp->GetPlugSolid() == tool) {
-				double T = cp->GetLuGreT();
-				Vec3d slip = cp->GetLuGreVS();
-				static double T_p = 0.0f;
 
-				dT = (T - T_p) / pdt;
-				if (dT > 0.0f) {
-					dT = 0.0f;
+				// Vibration
+				if (logger->condition.friction_model == 0) {
+					// Coulomb
+					static bool prev_is_static = false;
+					bool is_static = cp->IsStaticFriction();
+					if (!is_static && prev_is_static) {
+						// Transition from static to dynamic friction
+						stickSlipTime.push_back(t);
+						std::cout << "stick-slip at t=" << t << std::endl;
+					}
+					prev_is_static = is_static;
+					const double A1 = 15.0f;
+					const double A2 = 8.0f;
+					const double fa1 = 15.0f;
+					const double fa2 = 200.0f;
+					const double decay = 200.0f;
+					double forceNum = grabForce;
+					if (forceNum < 0.1)
+						forceNum = 0.1;
+					for (float t1 : stickSlipTime) {
+						if (phscene->GetCount() * pdt - t1 <= 0.2) {
+							vib += A2 * sqrt(forceNum) * exp(-(t - t1) * decay)*sin(2.0f * M_PI * fa2 * (t - t1));
+						}
+						else {
+							// Remove old stick-slip events
+							stickSlipTime.erase(stickSlipTime.begin());
+						}
+
+					}
+					Vec3d v, w;
+					cp->GetRelativeVelocity(v, w); 
+					vib += A1 * sqrt(forceNum) * v.norm() * sin(2.0f * M_PI * fa1 * t);
 				}
-				const double fa1 = 30.0f;
-				const double fa2 = 200.0f;
-				const double A1 = 1.0/1.5f;
-				const double A2 = 5.0f;
-				dT = min(-A1 * dT, 3.0f);
-				double slipd = min(A2 * slip.norm(), 3.0f);
-				double t = phscene->GetCount() * pdt;
-				vib =  A1 * dT * sin(2.0f * M_PI * fa1 * t) + A2 * slipd * sin(2.0f * M_PI * fa2 * t);
+				else {
+					// LuGre
+					double T = cp->GetLuGreT();
+					Vec3d slip = cp->GetLuGreVS();
+					static double T_p = 0.0f;
+
+					dT = (T - T_p) / pdt;
+					if (dT > 0.0f) {
+						dT = 0.0f;
+					}
+					const double fa1 = 30.0f;
+					const double fa2 = 200.0f;
+					const double A1 = 1.0 / 1.5f;
+					const double A2 = 5.0f;
+					dT = min(-A1 * dT, 3.0f);
+					double slipd = min(A2 * slip.norm(), 3.0f);
+					vib = A1 * dT * sin(2.0f * M_PI * fa1 * t) + A2 * slipd * sin(2.0f * M_PI * fa2 * t);
+					//std::cout << dT << "," << slipd << std::endl;
+					T_p = T;
+				}
 				totalForce.y += vib;
-				//std::cout << dT << "," << slipd << std::endl;
-				T_p = T;
 
 				// Logging
 				Logger::LogData data;

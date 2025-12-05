@@ -47,6 +47,8 @@ public: //Local Properties
 	DVAdIf* flexiforce;
 	GRLightDesc ld;    //lights used to draw letters and the force grap in the screen
 
+	std::vector<float> stickSlipTime;
+
 	UTRef<UTTimerIf> ptimer;
 	int pTimerID;
 	string fileName;
