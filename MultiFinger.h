@@ -72,6 +72,7 @@ public: //Local Properties
 	void MultiFinger::MultiFingerStep(Vec3f* spidarForce);
 	
 	void SetNext();
+	void IncreaseMass(double t);
 
 	//phsolid objects assigned during buildscene()
 	PHSolidIf *fPhone;

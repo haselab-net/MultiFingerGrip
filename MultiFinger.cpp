@@ -72,6 +72,13 @@ void MultiFinger::BuildScene(){
 	floor->GetShape(0)->SetStaticFriction(0.4f);
 
 	target = phscene->FindObject("soAluminioLight")->Cast();
+	std::cout << target->GetInertia() << std::endl;
+	target->SetInertia(Matrix3d(
+		100.0, 0.0, 0.0, 
+		0.0, 100.0, 0.0,
+		0.0, 0.0, 100.0));
+	//target->CompInertia();
+	std::cout << target->GetInertia() << std::endl;
 	SetNext();
 	
 }
@@ -207,11 +214,17 @@ void MultiFinger::TimerFunc(int id){
 		PHContactPointIf* cp = nullptr;
 		double dT = 0.0f;
 		double t = phscene->GetCount() * pdt;
+
+		// Check the state of contacts between tool and target. 
+		// Record friction state and generate vibration force accordingly.
+
 		for (int i = 0; i < phscene->NContacts(); i++) {
 			cp = phscene->GetContact(i);
 			if (cp->GetSocketSolid() == tool || cp->GetPlugSolid() == tool){
-			//if (cp->GetSocketSolid() == tool && cp->GetPlugSolid() == target ||
-				//cp->GetSocketSolid() == target && cp->GetPlugSolid() == tool) {
+				const double contactDuration = p->GetContactDuration() * pdt;
+				if (contactDuration >= 0.0f) {
+					IncreaseMass(contactDuration);
+				}
 
 				// Vibration
 				if (logger->condition.friction_model == 0) {
@@ -567,6 +580,43 @@ void MultiFinger::IdleFunc() {
 
 }
 
+void MultiFinger::IncreaseMass(double t) {
+	const double StartTime = 3.0; // [s]
+	const double Duration = 1.0; // [s]
+	const double dFdt = 2.0; // [N/s]
+	static int state = 0;
+	enum {
+		IDLE,
+		WAIT,
+		INCREASE,
+		FINISH
+	};
+	if (t < StartTime) {
+		if (state != WAIT) {
+			state = WAIT;
+			std::cout << "Waiting" << StartTime << " s" << std::endl;
+		}
+		return;
+	}
+	if (t > StartTime && t < StartTime + Duration) {
+		const double m0 = logger->condition.mass;
+		if (state == WAIT) {
+			std::cout << "Start Increasing Mass. Inital :" << m0 <<  std::endl;
+			state = INCREASE;
+		}
+		const double newMass = m0 + dFdt * (t - StartTime) / 9.8;
+		target->SetMass(newMass);
+		//std::cout << "Mass: " << newMass << std::endl;
+	}
+	else if (t >= StartTime + Duration) {
+		if (state == INCREASE) {
+			std::cout << "End Increasing Mass" << std::endl;
+			std::cout << "Final Mass: " << target->GetMass() << std::endl;
+			state = FINISH;
+		}
+	}
+}
+
 void MultiFinger::SetNext() {
 	// Close Current Log File
 	logger->close();
@@ -603,7 +653,7 @@ void MultiFinger::SetNext() {
 		logger->open("Coulomb");
 		std::cout << "<<<< Coulomb Condition Set >>>>" << std::endl;
 	}
-
+	target->SetMass(c.mass);
 	grip.SetMaterial(mat);
 
 	resetObjects();
