@@ -583,15 +583,18 @@ void MultiFinger::IdleFunc() {
 void MultiFinger::IncreaseMass(double t) {
 	const double StartTime = 3.0; // [s]
 	const double Duration = 1.0; // [s]
-	const double dFdt = 2.0; // [N/s]
-	static int state = 0;
 	enum {
 		IDLE,
 		WAIT,
 		INCREASE,
 		FINISH
 	};
-	if (t < StartTime) {
+	static int state = IDLE;
+	if (t < 0.0f) {
+		state = IDLE;
+		return;
+	}
+	else if (t < StartTime) {
 		if (state != WAIT) {
 			state = WAIT;
 			std::cout << "Waiting" << StartTime << " s" << std::endl;
@@ -599,12 +602,13 @@ void MultiFinger::IncreaseMass(double t) {
 		return;
 	}
 	if (t > StartTime && t < StartTime + Duration) {
-		const double m0 = logger->condition.mass;
+		const double m0 = logger->condition.mass0;
+		const double dmdt = logger->condition.dmdt;
 		if (state == WAIT) {
 			std::cout << "Start Increasing Mass. Inital :" << m0 <<  std::endl;
 			state = INCREASE;
 		}
-		const double newMass = m0 + dFdt * (t - StartTime) / 9.8;
+		const double newMass = m0 +  dmdt * (t - StartTime);
 		target->SetMass(newMass);
 		//std::cout << "Mass: " << newMass << std::endl;
 	}
@@ -653,7 +657,7 @@ void MultiFinger::SetNext() {
 		logger->open("Coulomb");
 		std::cout << "<<<< Coulomb Condition Set >>>>" << std::endl;
 	}
-	target->SetMass(c.mass);
+	target->SetMass(c.mass0);
 	grip.SetMaterial(mat);
 
 	resetObjects();

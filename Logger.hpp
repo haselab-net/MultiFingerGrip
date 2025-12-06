@@ -87,7 +87,7 @@ public:
 
 		double friction_force;
 		double vibration_force;
-
+		double mass;
 	}data;
 
 private:
