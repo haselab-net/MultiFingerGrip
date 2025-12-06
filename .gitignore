@@ -7,3 +7,4 @@
 17.0/
 *.vcxproj.user
 .vs/
+*.bin

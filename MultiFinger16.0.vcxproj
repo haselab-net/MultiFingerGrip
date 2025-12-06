@@ -279,9 +279,12 @@
     <ClCompile Include="FingerGrip.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MultiFinger.cpp" />
+    <ClCompile Include="conditions.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="conditions.hpp" />
     <ClInclude Include="FingerGrip.h" />
+    <ClInclude Include="Logger.hpp" />
     <ClInclude Include="MultiFinger.h" />
   </ItemGroup>
   <ItemGroup>

@@ -8,6 +8,8 @@
   <ItemGroup>
     <ClInclude Include="FingerGrip.h" />
     <ClInclude Include="MultiFinger.h" />
+    <ClInclude Include="Logger.hpp" />
+    <ClInclude Include="conditions.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sprFiles">
