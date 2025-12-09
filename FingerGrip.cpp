@@ -34,7 +34,7 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	//shapeDesc.material.frictionModel = FrictionModel::COULOMB;
 	//tool = fwScene->GetPHScene()->CreateSolid();
 	CDShapeIf* sh = fwScene->GetSdk()->GetPHSdk()->CreateShape(shapeDesc);
-	sh->SetDensity(0.0006f / sh->CalcVolume());
+	sh->SetDensity(0.006f / sh->CalcVolume());
 	tool->RemoveShape(0);
 	tool->AddShape(sh);
 	
@@ -46,8 +46,8 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	sprDesc.poseSocket.Ori() = deviceOrientation;
 	sprDesc.poseSocket.Pos() = position + length * direction;
 	sprDesc.posePlug.Ori() = deviceOrientation;
-	sprDesc.spring = 500.0 * Vec3d(1, 1, 1);	//	0.5N/mm = 500N/m
-	sprDesc.damper = sprDesc.spring * 0.01;
+	sprDesc.spring = 2000.0 * Vec3d(1, 1, 1);	//	0.5N/mm = 500N/m
+	sprDesc.damper = sprDesc.spring * 0.02;
 	sprDesc.springOri = sprDesc.spring[0];
 	sprDesc.damperOri = sprDesc.damper[0];
 	spring = phScene->CreateJoint(gripDevice, tool, sprDesc)->Cast();

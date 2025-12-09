@@ -1,19 +1,22 @@
+#include <Springhead.h>
 #include "conditions.hpp"
+
+using namespace Spr;
 
 // Coulomb
 Condition con_coulomb(
-    CONDITION_COULOMB,
+    FrictionModel::COULOMB,
+    0.9,
+    0.2,
     0.5,
-    0.3,
-    0.1,
-	2.0 / 9.8
+	4.0 / 9.8
 );
 
 // LuGre
 Condition con_lugre(
-    CONDITION_LUGRE,
-    1000.0, 1.0, 0.1,
-    0.2, 0.7, 400.0,
-    0.1,
-	2.0 / 9.8
+    FrictionModel::LUGRE,
+    1000.0, 0.01, 1.0,
+    0.2, 0.7, 0.001,
+    0.5,
+	4.0 / 9.8
 );

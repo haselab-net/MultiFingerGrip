@@ -1,5 +1,4 @@
-#define CONDITION_LUGRE 1
-#define CONDITION_COULOMB 0
+#include <Springhead.h>
 
 #pragma once
 
@@ -24,7 +23,7 @@ typedef struct Condition {
 
 	// Default
 	Condition()
-		: friction_model(CONDITION_COULOMB), mass0(0.1), dmdt(2.0/9.8)
+		: friction_model(Spr::FrictionModel::COULOMB), mass0(0.1), dmdt(2.0/9.8)
 	{
 		lugre = {};
 		coulomb = { 0.5, 0.3 };

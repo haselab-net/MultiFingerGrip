@@ -58,8 +58,8 @@ void MultiFinger::BuildScene(){
 
 	fwscene = GetSdk()->GetScene(i);
 	//fwscene->EnableRenderAxis(false, false, true);
-	fwscene->EnableRenderForce(false, true);
-	fwscene->EnableRenderContact(true);
+	fwscene->EnableRenderForce(false, false);
+	fwscene->EnableRenderContact(false);
 	GetSdk()->SetDebugMode(true);
 
 	grip.Build(fwscene);
@@ -68,15 +68,18 @@ void MultiFinger::BuildScene(){
 	DSTR << "Nsolids: " << nsolids << std::endl;  //DEBUG
 	PHSolidIf **solidspnt = phscene->GetSolids();
 	
+	phscene->SetGravity(Vec3d(0.0, -9.8, 0.0));
+
 	PHSolidIf *floor = phscene->FindObject("soCube")->Cast();
 	floor->GetShape(0)->SetStaticFriction(0.4f);
 
 	target = phscene->FindObject("soAluminioLight")->Cast();
 	std::cout << target->GetInertia() << std::endl;
+	const double I = 1.0e6;
 	target->SetInertia(Matrix3d(
-		100.0, 0.0, 0.0, 
-		0.0, 100.0, 0.0,
-		0.0, 0.0, 100.0));
+		I, 0.0, 0.0, 
+		0.0, I, 0.0,
+		0.0, 0.0, I));
 	//target->CompInertia();
 	std::cout << target->GetInertia() << std::endl;
 	SetNext();
@@ -195,12 +198,15 @@ void MultiFinger::TimerFunc(int id){
 		pose.PosY() += 0.07;
 		static int c = 0;
 		c++;
+		double flexiforceValue = 0.0f;
+		static double flexiforce_p = 0.0f;
 		if (flexiforce) {
 			// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
 			float volts = flexiforce->Voltage();
-			double offset = 1.0; // grabForce == 0 ‚Æ‚È‚éˆÊ’u‚ð‚¸‚ç‚·
-			grabForce = (2.0*volts) - offset;
-
+			double offset = 0.3; // grabForce == 0 ‚Æ‚È‚éˆÊ’u‚ð‚¸‚ç‚·
+			const double a = 0.1;
+			flexiforceValue = a * (0.7*(volts - offset)) + (1.0 - a) * flexiforce_p;
+			flexiforce_p = flexiforceValue;
 		}
 		grip.Step(pose, phscene->GetTimeStep());	//	this will be actual code.
 
@@ -217,47 +223,45 @@ void MultiFinger::TimerFunc(int id){
 
 		// Check the state of contacts between tool and target. 
 		// Record friction state and generate vibration force accordingly.
-
+		bool properGraspForce = false;
+		double grabForce = 0.0f;
+		bool isGrasping = false;
+		static bool isGraspingPrev = false;
+		static double contactStartTime = 0.0f;
+		static int increaseMassState = IDLE;
 		for (int i = 0; i < phscene->NContacts(); i++) {
 			cp = phscene->GetContact(i);
 			if (cp->GetSocketSolid() == tool || cp->GetPlugSolid() == tool){
-				const double contactDuration = p->GetContactDuration() * pdt;
-				if (contactDuration >= 0.0f) {
-					IncreaseMass(contactDuration);
-				}
+				Vec3d cf, ct;
+				cp->GetConstraintForce(cf, ct);
+				grabForce = cf[0]; // Normal force
+				properGraspForce = true; // IsGraspForceProper(grabForce);
 
+				isGrasping = properGraspForce;
+
+				static bool prev_is_static = false;
+				Vec3d cv, cw;
+				cp->GetRelativeVelocity(cv, cw);
+				bool is_static = cv.norm() <= 2.0e-2;//cp->IsStaticFriction();
+				if (!is_static && prev_is_static) {
+					// Transition from static to dynamic friction
+					stickSlipTime.push_back(t);
+					std::cout << "stick-slip at t=" << t << std::endl;
+				}
+				prev_is_static = is_static;
 				// Vibration
 				if (logger->condition.friction_model == 0) {
 					// Coulomb
-					static bool prev_is_static = false;
-					bool is_static = cp->IsStaticFriction();
-					if (!is_static && prev_is_static) {
-						// Transition from static to dynamic friction
-						stickSlipTime.push_back(t);
-						std::cout << "stick-slip at t=" << t << std::endl;
-					}
-					prev_is_static = is_static;
 					const double A1 = 15.0f;
 					const double A2 = 8.0f;
 					const double fa1 = 15.0f;
-					const double fa2 = 200.0f;
-					const double decay = 200.0f;
-					double forceNum = grabForce;
-					if (forceNum < 0.1)
-						forceNum = 0.1;
-					for (float t1 : stickSlipTime) {
-						if (phscene->GetCount() * pdt - t1 <= 0.2) {
-							vib += A2 * sqrt(forceNum) * exp(-(t - t1) * decay)*sin(2.0f * M_PI * fa2 * (t - t1));
-						}
-						else {
-							// Remove old stick-slip events
-							stickSlipTime.erase(stickSlipTime.begin());
-						}
+					const double fa2 = 150.0f;
+					if (grabForce < 0.1)
+						grabForce = 0.1;
 
-					}
 					Vec3d v, w;
 					cp->GetRelativeVelocity(v, w); 
-					vib += A1 * sqrt(forceNum) * v.norm() * sin(2.0f * M_PI * fa1 * t);
+					vib += A1 * sqrt(grabForce) * v.norm() * sin(2.0f * M_PI * fa1 * t);
 				}
 				else {
 					// LuGre
@@ -269,15 +273,29 @@ void MultiFinger::TimerFunc(int id){
 					if (dT > 0.0f) {
 						dT = 0.0f;
 					}
-					const double fa1 = 30.0f;
-					const double fa2 = 200.0f;
-					const double A1 = 1.0 / 1.5f;
-					const double A2 = 5.0f;
+					const double fa1 = 15.0f;
+					const double A1 = 3.0f;
+					if (dT < 1.0f) {
+						dT = 0.0f;
+					}
 					dT = min(-A1 * dT, 3.0f);
-					double slipd = min(A2 * slip.norm(), 3.0f);
-					vib = A1 * dT * sin(2.0f * M_PI * fa1 * t) + A2 * slipd * sin(2.0f * M_PI * fa2 * t);
+					//double slipd = min(A2 * slip.norm(), 3.0f);
+					vib = A1 * dT * sin(2.0f * M_PI * fa1 * t);// +A2 * slipd * sin(2.0f * M_PI * fa2 * t);
 					//std::cout << dT << "," << slipd << std::endl;
 					T_p = T;
+				}
+				const double decay = 200.0f;
+				const double fa2 = 150.0f;
+				const double A2 = 10.0f;
+				for (float t1 : stickSlipTime) {
+					if (phscene->GetCount() * pdt - t1 <= 0.2) {
+						vib += A2 * sqrt(grabForce) * exp(-(t - t1) * decay) * sin(2.0f * M_PI * fa2 * (t - t1));
+					}
+					else {
+						// Remove old stick-slip events
+						stickSlipTime.erase(stickSlipTime.begin());
+					}
+
 				}
 				totalForce.y += vib;
 
@@ -298,21 +316,18 @@ void MultiFinger::TimerFunc(int id){
 				data.lugre_dz[1] = cp->GetLuGreDZ()[1];
 				data.lugre_z[0] = cp->GetLuGreZ()[0];
 				data.lugre_z[1] = cp->GetLuGreZ()[1];
-				Vec3d cf, ct;
-				cp->GetConstraintForce(cf, ct);
-				logger->data.friction_force = Vec2d(cf[1], cf[2]).norm();
-				logger->data.vibration_force = vib;
+				data.friction_force = Vec2d(cf[1], cf[2]).norm();
+				data.vibration_force = vib;
+				data.is_static_friction = cp->IsStaticFriction();
+				data.mass = target->GetMass();
+				logger->data = data;
 				logger->saveSample();
 
 			}
 		}
-		if (c % 10 == 0) {
-			DSTR << "grabforce: " << grabForce << ", dT" << dT << std::endl;
-
-		}
 		for (Finger& finger : grip.fingers) {
 
-			finger.AddForce(grabForce);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
+			finger.AddForce(flexiforceValue);	//	This must be actual force sensor values. For debug purpose only first two pointers get force.
 			Vec6d couplingForce = finger.spring->GetMotorForce();
 			//DSTR << "c" << finger.GetIndex() << " f=" << couplingForce << std::endl;
 			//	finger.AddForce(couplingForce[0]);
@@ -327,7 +342,19 @@ void MultiFinger::TimerFunc(int id){
 			//totalTorque += t + (p % f);
 			totalTorque += (p % f);
 		}
-		double fs = 0.3, ts = 1;
+
+		if (!isGraspingPrev && isGrasping && increaseMassState < INCREASE || increaseMassState == FINISH) {
+			contactStartTime = t;
+		}
+		double contactDuration = -1.0f;
+		if (  properGraspForce || increaseMassState >= INCREASE) {
+			// Stable grasp or already started increasing, proceed to increase mass
+			contactDuration = t - contactStartTime;
+		}
+		increaseMassState = IncreaseMass(contactDuration);
+		isGraspingPrev = isGrasping;
+
+		double fs = 0.1, ts = 0.5;
 		if (bForceFeedback) {
 			spidar->SetForce(-fs * totalForce, -ts * totalTorque);
 		}
@@ -340,6 +367,13 @@ void MultiFinger::TimerFunc(int id){
 		//spidar->SetForce(-spidarForce);  //This function set the force 
 		
 		PostRedisplay();
+
+		// Debug log
+		if (c % 10 == 0) {
+			DSTR << "grabforce: " << grabForce << ", isProper: " << properGraspForce <<
+				", contactDuration: " << contactDuration <<  std::endl;
+
+		}
 	}
 	else {
 		return;
@@ -358,6 +392,7 @@ void MultiFinger::Keyboard(int key, int x, int y){
 	switch (key) {
 	case 27:
 	case 'q':
+		logger->close();
 		exit(0);
 		break;
 	case 'g':
@@ -580,30 +615,27 @@ void MultiFinger::IdleFunc() {
 
 }
 
-void MultiFinger::IncreaseMass(double t) {
+int MultiFinger::IncreaseMass(double t) {
 	const double StartTime = 3.0; // [s]
-	const double Duration = 1.0; // [s]
-	enum {
-		IDLE,
-		WAIT,
-		INCREASE,
-		FINISH
-	};
+	const double Duration = 3.0; // [s]
+	const double m0 = logger->condition.mass0;
+	const double dmdt = logger->condition.dmdt;
+
 	static int state = IDLE;
 	if (t < 0.0f) {
-		state = IDLE;
-		return;
+		if (state != IDLE) {
+			std::cout << "Reset Increase Mass State" << std::endl;
+			target->SetMass(m0);
+			state = IDLE;
+		}
 	}
 	else if (t < StartTime) {
 		if (state != WAIT) {
 			state = WAIT;
 			std::cout << "Waiting" << StartTime << " s" << std::endl;
 		}
-		return;
 	}
-	if (t > StartTime && t < StartTime + Duration) {
-		const double m0 = logger->condition.mass0;
-		const double dmdt = logger->condition.dmdt;
+	else if (t > StartTime && t < StartTime + Duration) {
 		if (state == WAIT) {
 			std::cout << "Start Increasing Mass. Inital :" << m0 <<  std::endl;
 			state = INCREASE;
@@ -619,6 +651,29 @@ void MultiFinger::IncreaseMass(double t) {
 			state = FINISH;
 		}
 	}
+	return state;
+}
+
+bool MultiFinger::IsGraspForceProper(double f) {
+	// Check if the grasp force is not too large.
+	const double minMass = logger->condition.mass0;
+	const double g = 9.8;
+	const double maxMass = minMass + logger->condition.dmdt * 2.0; // 1.0 s
+	const double minForceRatio = minMass / maxMass;
+	const double maxForceRatio = 1.0;
+	const double forceRatio = (minForceRatio + maxForceRatio) * 0.5;
+	double mu0 = 1.0f;
+	if (logger->condition.friction_model == 0) {
+		// Coulomb
+		mu0 = logger->condition.coulomb.mu0;
+	}
+	else {
+		// LuGre
+		mu0 = logger->condition.lugre.A + logger->condition.lugre.B;
+	}
+	const double maxProperForce = forceRatio * maxMass * g / (2.0 * mu0);
+	//const double minProperForce = minMass * g / (2.0 * mu0);
+	return  (f < maxProperForce);
 }
 
 void MultiFinger::SetNext() {
