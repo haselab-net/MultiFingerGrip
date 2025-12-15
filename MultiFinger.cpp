@@ -22,6 +22,7 @@ MultiFinger::MultiFinger(){
 
 	displayGraphFlag = false;
 	logger = new Logger();
+	message = "MultiFinger Grip using LuGre Friction Model.";
 }
 
 //main function of the class
@@ -49,8 +50,8 @@ void MultiFinger::Init(int argc, char* argv[]){
 void MultiFinger::BuildScene(){
 	
 	int i = 0;
-	UTRef<ImportIf> import = GetSdk()->GetFISdk()->CreateImport();	/// ÉCÉìÉ|Å[ÉgÉ|ÉCÉìÉgÇÃçÏê¨
-	GetSdk()->LoadScene(fileName, import);	/// ÉtÉ@ÉCÉãÇÃÉçÅ[Éh
+	UTRef<ImportIf> import = GetSdk()->GetFISdk()->CreateImport();	/// „Ç§„É≥„Éù„Éº„Éà„Éù„Ç§„É≥„Éà„ÅÆ‰ΩúÊàê
+	GetSdk()->LoadScene(fileName, import);	/// „Éï„Ç°„Ç§„É´„ÅÆ„É≠„Éº„Éâ
 
 	i = GetSdk()->NScene() - 1;
 	phscene = GetSdk()->GetScene(i)->GetPHScene();
@@ -82,7 +83,7 @@ void MultiFinger::BuildScene(){
 		0.0, 0.0, I));
 	//target->CompInertia();
 	std::cout << target->GetInertia() << std::endl;
-	SetNext();
+	SetNext(false);
 	
 }
 
@@ -113,7 +114,7 @@ void MultiFinger::InitHapticInterface() {
 		spidar = hiSdk->CreateHumanInterface(HISpidarGIf::GetIfInfoStatic())->Cast();
 		if (bFoundCy) {
 			spidar->Init(&HISpidarGDesc("SpidarG6X3R")); //Original SPIDARG6
-			flexiforce = hiSdk->RentVirtualDevice(DVAdIf::GetIfInfoStatic(), "", 3)->Cast(); // à≥óÕÉZÉìÉT
+			flexiforce = hiSdk->RentVirtualDevice(DVAdIf::GetIfInfoStatic(), "", 3)->Cast(); // ÂúßÂäõ„Çª„É≥„Çµ
 			std::cout << "Init SpidarG6X3R" << std::endl;
 		}
 		else {
@@ -159,7 +160,7 @@ void MultiFinger::InitCameraView(){
 	Affinef af;
 	af.Pos() = pos;
 	Vec3d target = Vec3d(0.0, 0.05, 0);	 //focused on the tochdown zone
-	GetCurrentWin()->GetTrackball()->SetTarget(target);	// ÉJÉÅÉâèâä˙à íuÇÃê›íË
+	GetCurrentWin()->GetTrackball()->SetTarget(target);	// „Ç´„É°„É©ÂàùÊúü‰ΩçÁΩÆ„ÅÆË®≠ÂÆö
 }
 
 
@@ -203,7 +204,7 @@ void MultiFinger::TimerFunc(int id){
 		if (flexiforce) {
 			// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
 			float volts = flexiforce->Voltage();
-			double offset = 0.3; // grabForce == 0 Ç∆Ç»ÇÈà íuÇÇ∏ÇÁÇ∑
+			double offset = 0.3; // grabForce == 0 „Å®„Å™„Çã‰ΩçÁΩÆ„Çí„Åö„Çâ„Åô
 			const double a = 0.1;
 			flexiforceValue = a * (0.7*(volts - offset)) + (1.0 - a) * flexiforce_p;
 			flexiforce_p = flexiforceValue;
@@ -273,12 +274,12 @@ void MultiFinger::TimerFunc(int id){
 					if (dT > 0.0f) {
 						dT = 0.0f;
 					}
-					const double fa1 = 15.0f;
-					const double A1 = 3.0f;
-					if (dT < 1.0f) {
+					const double fa1 = 30.0f;
+					const double A1 = 1.0f;
+					dT = min(fabs(A1 * dT), 3.0f);
+					if (dT < 2.0f) {
 						dT = 0.0f;
 					}
-					dT = min(-A1 * dT, 3.0f);
 					//double slipd = min(A2 * slip.norm(), 3.0f);
 					vib = A1 * dT * sin(2.0f * M_PI * fa1 * t);// +A2 * slipd * sin(2.0f * M_PI * fa2 * t);
 					//std::cout << dT << "," << slipd << std::endl;
@@ -286,7 +287,7 @@ void MultiFinger::TimerFunc(int id){
 				}
 				const double decay = 200.0f;
 				const double fa2 = 150.0f;
-				const double A2 = 10.0f;
+				const double A2 = 8.0f;
 				for (float t1 : stickSlipTime) {
 					if (phscene->GetCount() * pdt - t1 <= 0.2) {
 						vib += A2 * sqrt(grabForce) * exp(-(t - t1) * decay) * sin(2.0f * M_PI * fa2 * (t - t1));
@@ -297,7 +298,8 @@ void MultiFinger::TimerFunc(int id){
 					}
 
 				}
-				totalForce.y += vib;
+				if(bVibrationFeedback)
+					totalForce.y += vib;
 
 				// Logging
 				Logger::LogData data;
@@ -351,10 +353,10 @@ void MultiFinger::TimerFunc(int id){
 			// Stable grasp or already started increasing, proceed to increase mass
 			contactDuration = t - contactStartTime;
 		}
-		increaseMassState = IncreaseMass(contactDuration);
+		//increaseMassState = IncreaseMass(contactDuration);
 		isGraspingPrev = isGrasping;
 
-		double fs = 0.1, ts = 0.5;
+		double fs = 0.3f, ts = 0.5;
 		if (bForceFeedback) {
 			spidar->SetForce(-fs * totalForce, -ts * totalTorque);
 		}
@@ -413,7 +415,7 @@ void MultiFinger::Keyboard(int key, int x, int y){
 	}
 			break;
 	case '^':
-		SetNext();
+		SetNext(false);
 		break;
 	case 'd': {
 		if (displayGraphFlag) {
@@ -473,6 +475,18 @@ void MultiFinger::Keyboard(int key, int x, int y){
 		bForceFeedback = !bForceFeedback;
 		DSTR << "ForceFeedback: ";
 		if (bForceFeedback)
+		{
+			DSTR << "ON\n";
+		}
+		else
+		{
+			DSTR << "OFF\n";
+		}
+		break;
+	case 'v':
+		bVibrationFeedback = !bVibrationFeedback;
+		DSTR << "VibrationFeedback: ";
+		if (bVibrationFeedback)
 		{
 			DSTR << "ON\n";
 		}
@@ -544,13 +558,42 @@ void MultiFinger::displayGraph(GRRenderIf* render)
 
 void MultiFinger::Display()
 {
+	FWSceneIf* scene = GetWin(0)->GetScene();
 	GRRenderIf* render = GetSdk()->GetRender();
 
-	if (displayGraphFlag) {
-		displayGraph(render);
-	}
+	UTAutoLock LOCK(displayLock);
 
-	FWApp::Display();
+	render->ClearBuffer();
+	render->BeginScene();
+	
+	if (!scene->GetGRScene() || !scene->GetGRScene()->GetCamera() || !scene->GetGRScene()->GetCamera()->GetFrame()) {
+		render->SetViewMatrix(
+			GetCurrentWin()->GetTrackball()->GetAffine().inv());
+	}
+	render->PushLight(ld);
+	render->PushModelMatrix();
+
+	render->SetLighting(false);
+	render->SetDepthTest(false);
+	render->SetMaterial(Spr::GRRenderBaseIf::TMaterialSample::WHITE);
+	render->EnterScreenCoordinate();
+	render->SetMaterial(GRRenderIf::WHITE);
+	Spr::GRFont f;
+	f.height = 24;
+	f.width = 10;
+	render->SetFont(f);
+	render->DrawFont(Vec2f(50, 50), message);
+	render->LeaveScreenCoordinate();
+	render->SetLighting(true);
+	render->SetDepthTest(true);
+	render->PopModelMatrix();
+	render->PopLight();
+	scene->Draw(render, true);
+	render->EndScene();
+	render->SwapBuffers();
+
+	//FWApp::Display();
+	
 }
 
 
@@ -676,16 +719,22 @@ bool MultiFinger::IsGraspForceProper(double f) {
 	return  (f < maxProperForce);
 }
 
-void MultiFinger::SetNext() {
+void MultiFinger::SetNext(bool practice) {
 	// Close Current Log File
 	logger->close();
 	// Get Next Condition
 	Condition c;
-	if (rand() % 2) {
-		c = con_lugre;
+	static int con = 0;
+
+	const int USER_NUM = 0; // 0 < USER_NUM < 7
+	if (practice) {
+		con = (con + 1) % CONDITION_COUNT;
+		c = conditions[con];
+		std::cout << "Practice Mode : Condition " << con << std::endl;
 	}
 	else {
-		c = con_coulomb;
+		con++;
+		c = conditions[ seq[USER_NUM % 8][con] ];
 	}
 
 	logger->condition = c;
@@ -693,7 +742,7 @@ void MultiFinger::SetNext() {
 	// Set material
 	PHMaterial mat;
 	mat.frictionModel = c.friction_model;
-	if (mat.frictionModel == 1) {
+	if (mat.frictionModel >= FrictionModel::LUGRE) {
 		// LuGre
 		mat.bristlesSpringK = c.lugre.sigma0;
 		mat.bristlesDamperD = c.lugre.sigma1;
@@ -701,7 +750,8 @@ void MultiFinger::SetNext() {
 		mat.timeVaryFrictionA = c.lugre.A;
 		mat.timeVaryFrictionB = c.lugre.B;
 		mat.timeVaryFrictionC = c.lugre.C;
-		logger->open("Lugre");
+		if(!practice)
+			logger->open("Lugre");
 		std::cout << "<<<< Lugre Condition Set >>>>" << std::endl;
 
 	}
@@ -709,7 +759,8 @@ void MultiFinger::SetNext() {
 		// Coulomb
 		mat.mu = c.coulomb.mu;
 		mat.mu0 = c.coulomb.mu0;
-		logger->open("Coulomb");
+		if (!practice)
+			logger->open("Coulomb");
 		std::cout << "<<<< Coulomb Condition Set >>>>" << std::endl;
 	}
 	target->SetMass(c.mass0);

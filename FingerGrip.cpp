@@ -34,7 +34,7 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	//shapeDesc.material.frictionModel = FrictionModel::COULOMB;
 	//tool = fwScene->GetPHScene()->CreateSolid();
 	CDShapeIf* sh = fwScene->GetSdk()->GetPHSdk()->CreateShape(shapeDesc);
-	sh->SetDensity(0.006f / sh->CalcVolume());
+	sh->SetDensity(0.014f / sh->CalcVolume());
 	tool->RemoveShape(0);
 	tool->AddShape(sh);
 	

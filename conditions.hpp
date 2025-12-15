@@ -49,5 +49,14 @@ typedef struct Condition {
 };
 
 
-extern Condition con_coulomb;
-extern Condition con_lugre;
+enum ConditionType {
+    COULOMB_100G = 0,
+    COULOMB_150G,
+    LUGRE_100G,
+    LUGRE_150G,
+    CONDITION_COUNT
+};
+
+extern Condition conditions[CONDITION_COUNT];
+
+extern int seq[8][20];

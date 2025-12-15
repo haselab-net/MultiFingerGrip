@@ -59,6 +59,7 @@ public: //Local Properties
 	int grabKey;	//	'1' to '9'
 
 	bool bForceFeedback = false;
+	bool bVibrationFeedback = true;
 
 	MultiFinger();
 	void InitHapticInterface();
@@ -71,7 +72,7 @@ public: //Local Properties
 	virtual void AtExit();  //used to close the debug file
 	void MultiFinger::MultiFingerStep(Vec3f* spidarForce);
 	
-	void SetNext();
+	void SetNext(bool practice);
 	enum {
 		IDLE,
 		WAIT,
@@ -80,6 +81,8 @@ public: //Local Properties
 	};
 	int IncreaseMass(double t);
 	bool IsGraspForceProper(double f);
+	std::string message;
+
 
 	//phsolid objects assigned during buildscene()
 	PHSolidIf *fPhone;
