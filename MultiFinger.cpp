@@ -197,6 +197,11 @@ void MultiFinger::TimerFunc(int id){
 		Posed pose = spidar->GetPose();
 		pose.Pos() = pose.Pos()*4;
 		pose.PosY() += 0.07;
+		// Disable XZ movement and rotation
+		pose.PosX() = 0.0f;
+		pose.PosZ() = 0.0f;
+		pose.Ori() = Quaterniond(1, 0, 0, 0);
+
 		static int c = 0;
 		c++;
 		double flexiforceValue = 0.0f;
@@ -206,7 +211,7 @@ void MultiFinger::TimerFunc(int id){
 			// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
 			float volts = flexiforce->Voltage();
 			double offset = 0.3; // grabForce == 0 となる位置をずらす
-			const double a = 0.01;
+			const double a = 0.1;
 			flexiforceValue = a * (0.7*(volts - offset)) + (1.0 - a) * flexiforce_p;
 			flexiforce_p = flexiforceValue;
 			properGraspForce = IsGraspForceProper(flexiforceValue);
