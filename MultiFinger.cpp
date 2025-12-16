@@ -206,7 +206,7 @@ void MultiFinger::TimerFunc(int id){
 			// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
 			float volts = flexiforce->Voltage();
 			double offset = 0.3; // grabForce == 0 となる位置をずらす
-			const double a = 0.1;
+			const double a = 0.01;
 			flexiforceValue = a * (0.7*(volts - offset)) + (1.0 - a) * flexiforce_p;
 			flexiforce_p = flexiforceValue;
 			properGraspForce = IsGraspForceProper(flexiforceValue);
@@ -702,12 +702,13 @@ bool MultiFinger::IsGraspForceProper(double &f) {
 	const double maxForce = 30.0f; // [N]
 	// flexiforce value to N conversion
 	const double flexiforce_to_N = grip.fingers[0].spring->GetSpring().x; //
-	const double force = flexiforce_to_N * (f / 6 + 0.03 - 0.05); // 6 is spring length ratio, 0.03 is target object's half dimension 
+	const double offset = 0.03 + 0.007/2 - 0.05; // 0.03 : target object's half dimension, 0.007 : tool's radius, 0.05 : max length
+	const double force = flexiforce_to_N * (f / 6 + offset ); // 6 is spring length ratio
 	if(force < maxForce)
 		return true;
 	else {
 		std::cout << "Excessive Grasp Force: " << force << " N" << std::endl;
-		f = 6 * (maxForce / flexiforce_to_N - 0.03 + 0.05);
+		f = 6 * (maxForce / flexiforce_to_N - offset);
 		return false;
 	}
 	/* Calculate proper grasp force from mass and fricrtion parameters.
