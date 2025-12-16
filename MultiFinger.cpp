@@ -293,7 +293,7 @@ void MultiFinger::TimerFunc(int id){
 						dT = 0.0f;
 					}
 					const double fa1 = 30.0f;
-					const double A1 = 0.7f;
+					const double A1 = 0.6f;
 					dT = min(fabs(A1 * dT), 3.0f);
 					if (dT < 2.0f) {
 						dT = 0.0f;
@@ -308,7 +308,7 @@ void MultiFinger::TimerFunc(int id){
 				const double A2 = 8.0f;
 				for (float t1 : stickSlipTime) {
 					if (phscene->GetCount() * pdt - t1 <= 0.2) {
-						vib += A2 * sqrt(grabForce) * exp(-(t - t1) * decay) * sin(2.0f * M_PI * fa2 * (t - t1));
+						//vib += A2 * sqrt(grabForce) * exp(-(t - t1) * decay) * sin(2.0f * M_PI * fa2 * (t - t1));
 					}
 					else {
 						// Remove old stick-slip events
@@ -391,6 +391,22 @@ void MultiFinger::TimerFunc(int id){
 		//MultiFingerStep(&spidarForce);  //This function computes the lineal and rotational couplings value
 		//spidar->SetForce(-spidarForce);  //This function set the force 
 		
+		if (!properGraspForce) {
+			message = "Grasp Force Too STRONG. Please Decrease.";
+		}
+		else if (increaseMassState == IDLE) {
+			message = "Please GRASP the Object.";
+		}
+		else if (increaseMassState == WAIT) {
+			message = "Hold the GRASP Steady.";
+		}
+		else if (increaseMassState == INCREASE) {
+			message = "The Object will be pushed. Please DON'T drop.";
+		}
+		else if (increaseMassState == FINISH) {
+			message = "Success.";
+		}
+
 		PostRedisplay();
 
 		// Debug log
