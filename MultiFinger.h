@@ -96,6 +96,8 @@ public: //Local Properties
 	//PHSolidIf *fJenga3;
 	PHSolidIf *fAluminio;
 
+	PHSolidIf* pushObject;
+
 	//Used MultiFinger manipulation methods (Binod)
 	Posed defaultCenterPose;
 	Posed defaultPose1;

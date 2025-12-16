@@ -85,6 +85,19 @@ void MultiFinger::BuildScene(){
 	std::cout << target->GetInertia() << std::endl;
 	SetNext(false);
 	
+	// Push Object
+	CDCapsuleDesc capDesc;
+	capDesc.radius = 0.01;
+	capDesc.length = 0.1;
+	CDShapeIf *cap = GetSdk()->GetPHSdk()->CreateShape(capDesc)->Cast();
+	cap->SetDensity(0.0f);
+	pushObject = phscene->CreateSolid();
+	pushObject->AddShape(cap);
+	pushObject->SetFramePosition(Vec3d(0.0, 0.3, 0.0));
+	pushObject->SetOrientation(Quaterniond().Rot(M_PI / 2.0, 'x'));
+	pushObject->SetDynamical(false);
+	fwscene->GetPHScene()->SetContactMode(pushObject, PHSceneDesc::MODE_NONE);
+	fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::WHEAT, pushObject);
 }
 
 //Inits SPIDAR and calibrates the pointer position
@@ -280,7 +293,7 @@ void MultiFinger::TimerFunc(int id){
 						dT = 0.0f;
 					}
 					const double fa1 = 30.0f;
-					const double A1 = 1.0f;
+					const double A1 = 0.7f;
 					dT = min(fabs(A1 * dT), 3.0f);
 					if (dT < 2.0f) {
 						dT = 0.0f;
@@ -350,20 +363,25 @@ void MultiFinger::TimerFunc(int id){
 			totalTorque += (p % f);
 		}
 
-		if (!isGraspingPrev && isGrasping && increaseMassState < INCREASE || increaseMassState == FINISH) {
-			contactStartTime = t;
-		}
 		double contactDuration = -1.0f;
-		if (  properGraspForce || increaseMassState >= INCREASE) {
+		if (increaseMassState == FINISH && !isGrasping) {
+
+		}
+		else if (!isGraspingPrev && isGrasping && increaseMassState < INCREASE ) {
+			contactStartTime = t;
+			//std::cout << "contact start time: " << contactStartTime << std::endl;
+		}	
+		else if ( properGraspForce && isGrasping || increaseMassState == FINISH) {
 			// Stable grasp or already started increasing, proceed to increase mass
 			contactDuration = t - contactStartTime;
+			//std::cout << "contact duration: " << contactDuration << std::endl;
 		}
-		//increaseMassState = IncreaseMass(contactDuration);
+		increaseMassState = IncreaseMass(contactDuration);
 		isGraspingPrev = isGrasping;
 
 		double fs = 0.3f, ts = 0.5;
 		if (bForceFeedback) {
-			spidar->SetForce(-fs * totalForce, -ts * totalTorque);
+			spidar->SetForce(-fs * totalForce, Vec3f());
 		}
 		else {
 			spidar->SetForce(Vec3d(), Vec3d());
@@ -670,17 +688,35 @@ int MultiFinger::IncreaseMass(double t) {
 	const double dmdt = logger->condition.dmdt;
 
 	static int state = IDLE;
+	double pushHeight = pushObject->GetCenterPosition().y;
+	double targetHeight = target->GetCenterPosition().y + 0.03;
+	const double offset = 0.1/ 2 + 0.01;
+	const double startHeight = 0.3 + offset;
+	const double v = 0.1;
 	if (t < 0.0f) {
 		if (state != IDLE) {
 			std::cout << "Reset Increase Mass State" << std::endl;
 			target->SetMass(m0);
 			state = IDLE;
 		}
+		// Move Push Object to start position
+		if (pushHeight < startHeight)
+			pushObject->SetVelocity(Vec3d(0.0, v, 0.0));
+		else
+			pushObject->SetVelocity(Vec3d(0.0, 0.0, 0.0));
 	}
 	else if (t < StartTime) {
 		if (state != WAIT) {
 			state = WAIT;
 			std::cout << "Waiting" << StartTime << " s" << std::endl;
+		}
+		// Move Push Object to contact position
+		if (pushHeight > targetHeight + offset)
+			pushObject->SetVelocity(Vec3d(0.0, -v, 0.0));
+		else if (pushHeight < targetHeight + offset)
+			pushObject->SetVelocity(Vec3d(0.0, +v, 0.0));
+		else {
+
 		}
 	}
 	else if (t > StartTime && t < StartTime + Duration) {
@@ -689,31 +725,38 @@ int MultiFinger::IncreaseMass(double t) {
 			state = INCREASE;
 		}
 		const double newMass = m0 +  dmdt * (t - StartTime);
+		pushObject->SetVelocity(Vec3d(0.0, 0.0, 0.0));
+		pushObject->SetCenterPosition(Vec3d(0.0, targetHeight + offset, 0.0));
 		target->SetMass(newMass);
-		//std::cout << "Mass: " << newMass << std::endl;
 	}
 	else if (t >= StartTime + Duration) {
 		if (state == INCREASE) {
 			std::cout << "End Increasing Mass" << std::endl;
 			std::cout << "Final Mass: " << target->GetMass() << std::endl;
 			state = FINISH;
+			pushObject->SetVelocity(Vec3d(0.0, 0.0, 0.0));
+			pushObject->SetCenterPosition(Vec3d(0.0, targetHeight + offset, 0.0));
 		}
 	}
+
 	return state;
 }
 
 bool MultiFinger::IsGraspForceProper(double &f) {
 	// Check if the grasp force is not too large.
-	const double maxForce = 30.0f; // [N]
+	const double maxForce = 40.0f; // [N]
 	// flexiforce value to N conversion
 	const double flexiforce_to_N = grip.fingers[0].spring->GetSpring().x; //
 	const double offset = 0.03 + 0.007/2 - 0.05; // 0.03 : target object's half dimension, 0.007 : tool's radius, 0.05 : max length
 	const double force = flexiforce_to_N * (f / 6 + offset ); // 6 is spring length ratio
-	if(force < maxForce)
+	if (force < maxForce) {
+		fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::WHITE, target);
 		return true;
+	}
 	else {
 		std::cout << "Excessive Grasp Force: " << force << " N" << std::endl;
 		f = 6 * (maxForce / flexiforce_to_N - offset);
+		fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::RED, target);
 		return false;
 	}
 	/* Calculate proper grasp force from mass and fricrtion parameters.
