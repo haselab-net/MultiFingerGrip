@@ -201,6 +201,7 @@ void MultiFinger::TimerFunc(int id){
 		c++;
 		double flexiforceValue = 0.0f;
 		static double flexiforce_p = 0.0f;
+		bool properGraspForce = false;
 		if (flexiforce) {
 			// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
 			float volts = flexiforce->Voltage();
@@ -208,6 +209,7 @@ void MultiFinger::TimerFunc(int id){
 			const double a = 0.1;
 			flexiforceValue = a * (0.7*(volts - offset)) + (1.0 - a) * flexiforce_p;
 			flexiforce_p = flexiforceValue;
+			properGraspForce = IsGraspForceProper(flexiforceValue);
 		}
 		grip.Step(pose, phscene->GetTimeStep());	//	this will be actual code.
 
@@ -224,7 +226,6 @@ void MultiFinger::TimerFunc(int id){
 
 		// Check the state of contacts between tool and target. 
 		// Record friction state and generate vibration force accordingly.
-		bool properGraspForce = false;
 		double grabForce = 0.0f;
 		bool isGrasping = false;
 		static bool isGraspingPrev = false;
@@ -236,7 +237,6 @@ void MultiFinger::TimerFunc(int id){
 				Vec3d cf, ct;
 				cp->GetConstraintForce(cf, ct);
 				grabForce = cf[0]; // Normal force
-				properGraspForce = true; // IsGraspForceProper(grabForce);
 
 				isGrasping = properGraspForce;
 
@@ -697,8 +697,20 @@ int MultiFinger::IncreaseMass(double t) {
 	return state;
 }
 
-bool MultiFinger::IsGraspForceProper(double f) {
+bool MultiFinger::IsGraspForceProper(double &f) {
 	// Check if the grasp force is not too large.
+	const double maxForce = 30.0f; // [N]
+	// flexiforce value to N conversion
+	const double flexiforce_to_N = grip.fingers[0].spring->GetSpring().x; //
+	const double force = flexiforce_to_N * (f / 6 + 0.03 - 0.05); // 6 is spring length ratio, 0.03 is target object's half dimension 
+	if(force < maxForce)
+		return true;
+	else {
+		std::cout << "Excessive Grasp Force: " << force << " N" << std::endl;
+		f = 6 * (maxForce / flexiforce_to_N - 0.03 + 0.05);
+		return false;
+	}
+	/* Calculate proper grasp force from mass and fricrtion parameters.
 	const double minMass = logger->condition.mass0;
 	const double g = 9.8;
 	const double maxMass = minMass + logger->condition.dmdt * 2.0; // 1.0 s
@@ -717,6 +729,7 @@ bool MultiFinger::IsGraspForceProper(double f) {
 	const double maxProperForce = forceRatio * maxMass * g / (2.0 * mu0);
 	//const double minProperForce = minMass * g / (2.0 * mu0);
 	return  (f < maxProperForce);
+	*/
 }
 
 void MultiFinger::SetNext(bool practice) {

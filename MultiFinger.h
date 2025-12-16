@@ -80,7 +80,7 @@ public: //Local Properties
 		FINISH
 	};
 	int IncreaseMass(double t);
-	bool IsGraspForceProper(double f);
+	bool IsGraspForceProper(double &f);
 	std::string message;
 
 
