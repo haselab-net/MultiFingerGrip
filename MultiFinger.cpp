@@ -9,7 +9,7 @@
 #include "Logger.hpp"
 
 
-#define USER_NUM 0
+#define USER_NUM 15
 
 //Constructor 
 MultiFinger::MultiFinger(){
@@ -708,7 +708,7 @@ void MultiFinger::IdleFunc() {
 }
 
 int MultiFinger::IncreaseMass(double t) {
-	const double StartTime = 3.0; // [s]
+	const double StartTime = 1.0; // [s]
 	static double randomWaitTime = 0.0; // [s]
 	const double Duration = 2.0; // [s]
 	const double m0 = logger->condition.mass0;
@@ -776,7 +776,7 @@ int MultiFinger::IncreaseMass(double t) {
 
 bool MultiFinger::IsGraspForceProper(double &f) {
 	// Check if the grasp force is not too large.
-	const double maxForce = 10.0f; // [N]
+	const double maxForce = 11.0f; // [N]
 	const double clipForce = 40.0f; // [N]
 	// flexiforce value to N conversion
 	const double flexiforce_to_N = grip.fingers[0].spring->GetSpring().x; //
