@@ -46,7 +46,7 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	sprDesc.poseSocket.Ori() = deviceOrientation;
 	sprDesc.poseSocket.Pos() = position + length * direction;
 	sprDesc.posePlug.Ori() = deviceOrientation;
-	sprDesc.spring = 500.0 * Vec3d(1, 1, 1);	//	0.5N/mm = 500N/m
+	sprDesc.spring = 1000.0 * Vec3d(1, 1, 1);	//	0.5N/mm = 500N/m
 	sprDesc.damper = sprDesc.spring * 0.02;
 	sprDesc.springOri = sprDesc.spring[0];
 	sprDesc.damperOri = sprDesc.damper[0];

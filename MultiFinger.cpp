@@ -23,6 +23,7 @@ MultiFinger::MultiFinger(){
 	displayGraphFlag = false;
 	logger = new Logger();
 	message = "MultiFinger Grip using LuGre Friction Model.";
+	increaseMassState = IDLE;
 }
 
 //main function of the class
@@ -220,7 +221,6 @@ void MultiFinger::TimerFunc(int id){
 		double flexiforceValue = 0.0f;
 		static double flexiforce_p = 0.0f;
 		bool properGraspForce = false;
-		static int increaseMassState = IDLE;
 		if (flexiforce) {
 			// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
 			float volts = flexiforce->Voltage();
@@ -364,10 +364,7 @@ void MultiFinger::TimerFunc(int id){
 		}
 
 		double contactDuration = -1.0f;
-		if (increaseMassState == FINISH && !isGrasping) {
-
-		}
-		else if (!isGraspingPrev && isGrasping && increaseMassState < INCREASE ) {
+		if (!isGraspingPrev && isGrasping && increaseMassState < INCREASE ) {
 			contactStartTime = t;
 			//std::cout << "contact start time: " << contactStartTime << std::endl;
 		}	
@@ -391,21 +388,20 @@ void MultiFinger::TimerFunc(int id){
 		//spidar->SetForce(-spidarForce);  //This function set the force 
 		
 		if ((!properGraspForce) && increaseMassState <= WAIT) {
-			message = "Grasp Force Too STRONG. Please Decrease.";
+			message = "Grasp force too STRONG. Please Loosen Grip.";
 		}
 		else if (increaseMassState == IDLE) {
 			message = "Please GRASP the Object.";
 		}
 		else if (increaseMassState == WAIT) {
-			message = "Hold the GRASP Steady.";
+			message = "Please Hold STEADY.";
 		}
-		else if (increaseMassState == INCREASE) {
-			message = "The Object Will Be Pushed by BLUE Object. Please DON'T Drop.";
+		else if (increaseMassState == INCREASE || increaseMassState == RANDOM_WAIT) {
+			message = "The Blue Cylinder will push the BOX. Please DON'T Drop it.";
 		}
 		else if (increaseMassState == FINISH) {
-			message = "Success. Please Release.";
+			message = "Success. Please Press Enter Key.";
 		}
-
 		PostRedisplay();
 
 		// Debug log
@@ -430,6 +426,12 @@ void MultiFinger::Keyboard(int key, int x, int y){
 	const double d = 0.01;
 	bool stopTimer = false;
 	switch (key) {
+	case 13:
+		// Enter key
+		if (increaseMassState == FINISH) {
+			SetNext(false);
+		}
+		break;
 	case 27:
 	case 'q':
 		logger->close();
@@ -698,7 +700,8 @@ void MultiFinger::IdleFunc() {
 
 int MultiFinger::IncreaseMass(double t) {
 	const double StartTime = 3.0; // [s]
-	const double Duration = 3.0; // [s]
+	static double randomWaitTime = 0.0; // [s]
+	const double Duration = 2.0; // [s]
 	const double m0 = logger->condition.mass0;
 	const double dmdt = logger->condition.dmdt;
 
@@ -713,6 +716,7 @@ int MultiFinger::IncreaseMass(double t) {
 			std::cout << "Reset Increase Mass State" << std::endl;
 			target->SetMass(m0);
 			state = IDLE;
+			randomWaitTime = 0.0;
 		}
 		// Move Push Object to start position
 		if (pushHeight < startHeight)
@@ -720,11 +724,15 @@ int MultiFinger::IncreaseMass(double t) {
 		else
 			pushObject->SetVelocity(Vec3d(0.0, 0.0, 0.0));
 	}
-	else if (t < StartTime) {
-		if (state != WAIT) {
+	else if (t < StartTime + randomWaitTime) {
+		if (state == IDLE) {
 			state = WAIT;
-			std::cout << "Waiting" << StartTime << " s" << std::endl;
+			std::cout << "[" << t << "]" << "Waiting" << StartTime << " s" << std::endl;
+			randomWaitTime = 3.0 + ((double)rand() / RAND_MAX) * 3.0; // 3.0 - 6.0 [s]
+			std::cout << "Random Wait Time: " << randomWaitTime << " s" << std::endl;
 		}
+		else if (state == WAIT && t > StartTime)
+			state = RANDOM_WAIT;
 		// Move Push Object to contact position
 		if (pushHeight > targetHeight + offset)
 			pushObject->SetVelocity(Vec3d(0.0, -v, 0.0));
@@ -734,9 +742,9 @@ int MultiFinger::IncreaseMass(double t) {
 
 		}
 	}
-	else if (t > StartTime && t < StartTime + Duration) {
-		if (state == WAIT) {
-			std::cout << "Start Increasing Mass. Inital :" << m0 <<  std::endl;
+	else if (t < StartTime + randomWaitTime + Duration) {
+		if (state != INCREASE) {
+			std::cout << "[" << t << "]" << "Start Increasing Mass.Inital :" << m0 <<  std::endl;
 			state = INCREASE;
 		}
 		const double newMass = m0 +  dmdt * (t - StartTime);
@@ -744,7 +752,7 @@ int MultiFinger::IncreaseMass(double t) {
 		pushObject->SetCenterPosition(Vec3d(0.0, targetHeight + offset, 0.0));
 		target->SetMass(newMass);
 	}
-	else if (t >= StartTime + Duration) {
+	else {
 		if (state == INCREASE) {
 			std::cout << "End Increasing Mass" << std::endl;
 			std::cout << "Final Mass: " << target->GetMass() << std::endl;
@@ -759,7 +767,7 @@ int MultiFinger::IncreaseMass(double t) {
 
 bool MultiFinger::IsGraspForceProper(double &f) {
 	// Check if the grasp force is not too large.
-	const double maxForce = 5.0f; // [N]
+	const double maxForce = 10.0f; // [N]
 	const double clipForce = 40.0f; // [N]
 	// flexiforce value to N conversion
 	const double flexiforce_to_N = grip.fingers[0].spring->GetSpring().x; //
@@ -799,6 +807,7 @@ bool MultiFinger::IsGraspForceProper(double &f) {
 }
 
 void MultiFinger::SetNext(bool practice) {
+	increaseMassState = IDLE;
 	// Close Current Log File
 	logger->close();
 	// Get Next Condition

@@ -76,9 +76,12 @@ public: //Local Properties
 	enum {
 		IDLE,
 		WAIT,
+		RANDOM_WAIT,
 		INCREASE,
 		FINISH
 	};
+	int increaseMassState;
+	int trialNumber;
 	int IncreaseMass(double t);
 	bool IsGraspForceProper(double &f);
 	std::string message;
