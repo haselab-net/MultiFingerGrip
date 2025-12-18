@@ -82,6 +82,7 @@ public: //Local Properties
 	};
 	int increaseMassState;
 	int trialNumber;
+	bool practiceTrial;
 	int IncreaseMass(double t);
 	bool IsGraspForceProper(double &f);
 	std::string message;

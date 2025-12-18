@@ -59,4 +59,4 @@ enum ConditionType {
 
 extern Condition conditions[CONDITION_COUNT];
 
-extern int seq[8][20];
+extern int seq[16][20];

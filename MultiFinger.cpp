@@ -9,6 +9,8 @@
 #include "Logger.hpp"
 
 
+#define USER_NUM 0
+
 //Constructor 
 MultiFinger::MultiFinger(){
 
@@ -21,9 +23,10 @@ MultiFinger::MultiFinger(){
 	//this->myfile.open("c:\\tmp\\loco.csv");
 
 	displayGraphFlag = false;
-	logger = new Logger();
+	logger = new Logger("Exp" + std::to_string(USER_NUM));
 	message = "MultiFinger Grip using LuGre Friction Model.";
 	increaseMassState = IDLE;
+	trialNumber = 0;
 }
 
 //main function of the class
@@ -84,7 +87,7 @@ void MultiFinger::BuildScene(){
 		0.0, 0.0, I));
 	//target->CompInertia();
 	std::cout << target->GetInertia() << std::endl;
-	SetNext(false);
+	SetNext(true);
 	
 	// Push Object
 	CDCapsuleDesc capDesc;
@@ -432,6 +435,9 @@ void MultiFinger::Keyboard(int key, int x, int y){
 			SetNext(false);
 		}
 		break;
+	case 'p':
+		SetNext(true);
+		break;
 	case 27:
 	case 'q':
 		logger->close();
@@ -454,9 +460,6 @@ void MultiFinger::Keyboard(int key, int x, int y){
 		calibrate();
 	}
 			break;
-	case '^':
-		SetNext(false);
-		break;
 	case 'd': {
 		if (displayGraphFlag) {
 			displayGraphFlag = false;
@@ -623,6 +626,12 @@ void MultiFinger::Display()
 	f.width = 10;
 	render->SetFont(f);
 	render->DrawFont(Vec2f(50, 50), message);
+	std::string withForce = bForceFeedback ? "ON" : "OFF";
+	render->DrawFont(Vec2f(1000, 100), "Force Feedback : " + withForce);
+	if (practiceTrial)
+		render->DrawFont(Vec2f(1000, 150), "Practice Trial");
+	else
+		render->DrawFont(Vec2f(1000, 150), "Trial: " + std::to_string(trialNumber) + " / " + std::to_string(20));
 	render->LeaveScreenCoordinate();
 	render->SetLighting(true);
 	render->SetDepthTest(true);
@@ -812,17 +821,24 @@ void MultiFinger::SetNext(bool practice) {
 	logger->close();
 	// Get Next Condition
 	Condition c;
-	static int con = 0;
 
-	const int USER_NUM = 0; // 0 < USER_NUM < 7
+	static int p = 0;
+
+	const int SEQ_NUM = sizeof(seq[0]) / sizeof(seq[0][0]);
+
+	practiceTrial = practice;
 	if (practice) {
-		con = (con + 1) % CONDITION_COUNT;
-		c = conditions[con];
-		std::cout << "Practice Mode : Condition " << con << std::endl;
+		p = (p + 1) % CONDITION_COUNT;
+		c = conditions[p];
+		std::cout << "Practice Mode : Condition " << p << std::endl;
 	}
 	else {
-		con++;
-		c = conditions[ seq[USER_NUM % 8][con] ];
+		bForceFeedback = trialNumber < SEQ_NUM;
+		int u = (USER_NUM + int(trialNumber / SEQ_NUM)) % 8;
+		int s = trialNumber % SEQ_NUM;
+		c = conditions[ seq[u][s] ];
+		std::cout << "Trial " << trialNumber << ": Condition " << seq[u][s] << "ForceFeedback :" << bForceFeedback << std::endl;
+		trialNumber++;
 	}
 
 	logger->condition = c;
@@ -838,8 +854,10 @@ void MultiFinger::SetNext(bool practice) {
 		mat.timeVaryFrictionA = c.lugre.A;
 		mat.timeVaryFrictionB = c.lugre.B;
 		mat.timeVaryFrictionC = c.lugre.C;
-		if(!practice)
+		if (!practice)
 			logger->open("Lugre");
+		else
+			logger->open("pLuGre");
 		std::cout << "<<<< Lugre Condition Set >>>>" << std::endl;
 
 	}
@@ -849,6 +867,8 @@ void MultiFinger::SetNext(bool practice) {
 		mat.mu0 = c.coulomb.mu0;
 		if (!practice)
 			logger->open("Coulomb");
+		else
+			logger->open("pCoulomb");
 		std::cout << "<<<< Coulomb Condition Set >>>>" << std::endl;
 	}
 	target->SetMass(c.mass0);
