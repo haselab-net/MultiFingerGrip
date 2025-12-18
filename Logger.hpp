@@ -37,7 +37,8 @@ public:
 	}
 
 	void saveSample() {
-		fwrite(&data, sizeof(LogData), 1, logFile);
+		if (logFile)
+			fwrite(&data, sizeof(LogData), 1, logFile);
 	}
 
 	void open(std::string filename = "") {

@@ -856,8 +856,6 @@ void MultiFinger::SetNext(bool practice) {
 		mat.timeVaryFrictionC = c.lugre.C;
 		if (!practice)
 			logger->open("Lugre");
-		else
-			logger->open("pLuGre");
 		std::cout << "<<<< Lugre Condition Set >>>>" << std::endl;
 
 	}
@@ -867,8 +865,6 @@ void MultiFinger::SetNext(bool practice) {
 		mat.mu0 = c.coulomb.mu0;
 		if (!practice)
 			logger->open("Coulomb");
-		else
-			logger->open("pCoulomb");
 		std::cout << "<<<< Coulomb Condition Set >>>>" << std::endl;
 	}
 	target->SetMass(c.mass0);
