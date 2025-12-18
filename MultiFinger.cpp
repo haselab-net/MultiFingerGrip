@@ -168,11 +168,11 @@ void MultiFinger::InitHapticInterface() {
 
 void MultiFinger::InitCameraView(){
 
-	Vec3d pos = Vec3d(0, 0.05, 0.2);
+	Vec3d pos = Vec3d(0, 0.08, 0.4);
 	GetCurrentWin()->GetTrackball()->SetPosition(pos);
 	Affinef af;
 	af.Pos() = pos;
-	Vec3d target = Vec3d(0.0, 0.05, 0);	 //focused on the tochdown zone
+	Vec3d target = Vec3d(0.0, 0.07, 0);	 //focused on the tochdown zone
 	GetCurrentWin()->GetTrackball()->SetTarget(target);	// カメラ初期位置の設定
 }
 
@@ -226,7 +226,7 @@ void MultiFinger::TimerFunc(int id){
 			float volts = flexiforce->Voltage();
 			double offset = 0.3; // grabForce == 0 となる位置をずらす
 			const double a = 0.1;
-			flexiforceValue = a * (0.7*(volts - offset)) + (1.0 - a) * flexiforce_p;
+			flexiforceValue = a * (0.4*(volts - offset)) + (1.0 - a) * flexiforce_p;
 			flexiforce_p = flexiforceValue;
 			properGraspForce = IsGraspForceProper(flexiforceValue);
 			if(properGraspForce || increaseMassState >= INCREASE)
@@ -279,12 +279,10 @@ void MultiFinger::TimerFunc(int id){
 					const double A2 = 8.0f;
 					const double fa1 = 15.0f;
 					const double fa2 = 150.0f;
-					if (grabForce < 0.1)
-						grabForce = 0.1;
 
 					Vec3d v, w;
 					cp->GetRelativeVelocity(v, w); 
-					vib += A1 * sqrt(grabForce) * v.norm() * sin(2.0f * M_PI * fa1 * t);
+					vib += A1 * sqrt(grabForce>0.5 ? 0.5 : grabForce) * v.norm() * sin(2.0f * M_PI * fa1 * t);
 				}
 				else {
 					// LuGre
@@ -299,7 +297,7 @@ void MultiFinger::TimerFunc(int id){
 					const double fa1 = 30.0f;
 					const double A1 = 0.6f;
 					dT = min(fabs(A1 * dT), 3.0f);
-					if (dT < 2.0f) {
+					if (dT < 1.0f) {
 						dT = 0.0f;
 					}
 					//double slipd = min(A2 * slip.norm(), 3.0f);
@@ -312,7 +310,7 @@ void MultiFinger::TimerFunc(int id){
 				const double A2 = 8.0f;
 				for (float t1 : stickSlipTime) {
 					if (phscene->GetCount() * pdt - t1 <= 0.2) {
-						//vib += A2 * sqrt(grabForce) * exp(-(t - t1) * decay) * sin(2.0f * M_PI * fa2 * (t - t1));
+						vib += A2 * sqrt(grabForce > 0.5 ? 0.5 : grabForce) * exp(-(t - t1) * decay) * sin(2.0f * M_PI * fa2 * (t - t1));
 					}
 					else {
 						// Remove old stick-slip events
@@ -320,8 +318,6 @@ void MultiFinger::TimerFunc(int id){
 					}
 
 				}
-				if(bVibrationFeedback)
-					totalForce.y += vib;
 
 				// Logging
 				Logger::LogData data;
@@ -384,12 +380,11 @@ void MultiFinger::TimerFunc(int id){
 		isGraspingPrev = isGrasping;
 
 		double fs = 0.3f, ts = 0.5;
-		if (bForceFeedback) {
-			spidar->SetForce(-fs * totalForce, Vec3f());
-		}
-		else {
-			spidar->SetForce(Vec3d(), Vec3d());
-		}
+		if(!bForceFeedback)
+			totalForce = Vec3d::Zero();
+		if (bVibrationFeedback)
+			totalForce.y += vib;
+		spidar->SetForce(-fs * totalForce, Vec3f());	
 
 		spidar->Update(pdt);  //updates the forces displayed in SPIDAR
 		//MultiFingerStep(&spidarForce);  //This function computes the lineal and rotational couplings value
@@ -653,7 +648,7 @@ void MultiFinger::resetObjects(){
 	Posed ptmp;
 	target->SetVelocity(Vec3d());
 	qq.FromEuler(Vec3f(Radf(0.0f), Radf(180.0f), 0.0f));
-	ptmp = Posed(Vec3d(0.0f, 0.035f, 0.0f), qq);
+	ptmp = Posed(Vec3d(0.0f, 0.7f, 0.0f), qq);
 	target->SetPose(ptmp);
 	/*
 	int randAngle;
@@ -709,7 +704,7 @@ int MultiFinger::IncreaseMass(double t) {
 
 	static int state = IDLE;
 	double pushHeight = pushObject->GetCenterPosition().y;
-	double targetHeight = target->GetCenterPosition().y + 0.03;
+	double targetHeight = target->GetCenterPosition().y + 0.12/2;
 	const double offset = 0.1/ 2 + 0.01;
 	const double startHeight = 0.3 + offset;
 	const double v = 0.1;
@@ -764,13 +759,13 @@ int MultiFinger::IncreaseMass(double t) {
 
 bool MultiFinger::IsGraspForceProper(double &f) {
 	// Check if the grasp force is not too large.
-	const double maxForce = 20.0f; // [N]
+	const double maxForce = 5.0f; // [N]
 	const double clipForce = 40.0f; // [N]
 	// flexiforce value to N conversion
 	const double flexiforce_to_N = grip.fingers[0].spring->GetSpring().x; //
-	const double offset = 0.03 + 0.007/2 - 0.05; // 0.03 : target object's half dimension, 0.007 : tool's radius, 0.05 : max length
+	const double offset = 0.06/2 + 0.007/2 - 0.05; // 0.03 : target object's half dimension, 0.007 : tool's radius, 0.05 : max length
 	const double force = flexiforce_to_N * (f / 6 + offset ); // 6 is spring length ratio
-	if (force < clipForce) {
+	if (force < maxForce) {
 		//fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::WHITE, target);
 		return true;
 	}

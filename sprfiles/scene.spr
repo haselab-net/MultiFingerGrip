@@ -147,7 +147,7 @@ FWScene fwScene
 			dynamical = true
 			PHFrame{
 				CDBox cdAluminio{
-				boxsize = 0.06 0.06 0.06 
+				boxsize = 0.06 0.12 0.06 
 				}
 			}
 			//PHFrame{
