@@ -9,14 +9,14 @@ Condition conditions[CONDITION_COUNT] = {
         FrictionModel::COULOMB,
         0.9, 0.6,
         0.100,      // 100g
-        4.0 / 9.8
+        4.0 / 9.8 / 0.3
     ),
     // COULOMB_150G
     Condition(
         FrictionModel::COULOMB,
         0.9, 0.6,
         0.150,      // 150g
-        4.0 / 9.8
+        4.0 / 9.8 / 0.3
     ),
     // LUGRE_100G
     Condition(
@@ -24,7 +24,7 @@ Condition conditions[CONDITION_COUNT] = {
         1000.0, 0.00, 1.0,
         0.6, 0.3, 0.001,
         0.100,      // 100g
-        4.0 / 9.8
+        4.0 / 9.8 / 0.3
     ),
     // LUGRE_150G
     Condition(
@@ -32,7 +32,7 @@ Condition conditions[CONDITION_COUNT] = {
         1000.0, 0.00, 1.0,
         0.6, 0.3, 0.001,
         0.150,      // 150g
-        4.0 / 9.8
+        4.0 / 9.8 / 0.3
     )
 }; 
 

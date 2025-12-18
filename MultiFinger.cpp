@@ -97,7 +97,7 @@ void MultiFinger::BuildScene(){
 	pushObject->SetOrientation(Quaterniond().Rot(M_PI / 2.0, 'x'));
 	pushObject->SetDynamical(false);
 	fwscene->GetPHScene()->SetContactMode(pushObject, PHSceneDesc::MODE_NONE);
-	fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::WHEAT, pushObject);
+	fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::DODGERBLUE, pushObject);
 }
 
 //Inits SPIDAR and calibrates the pointer position
@@ -220,6 +220,7 @@ void MultiFinger::TimerFunc(int id){
 		double flexiforceValue = 0.0f;
 		static double flexiforce_p = 0.0f;
 		bool properGraspForce = false;
+		static int increaseMassState = IDLE;
 		if (flexiforce) {
 			// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
 			float volts = flexiforce->Voltage();
@@ -228,6 +229,10 @@ void MultiFinger::TimerFunc(int id){
 			flexiforceValue = a * (0.7*(volts - offset)) + (1.0 - a) * flexiforce_p;
 			flexiforce_p = flexiforceValue;
 			properGraspForce = IsGraspForceProper(flexiforceValue);
+			if(properGraspForce || increaseMassState >= INCREASE)
+				fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::WHITE, target);
+			else
+				fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::RED, target);
 		}
 		grip.Step(pose, phscene->GetTimeStep());	//	this will be actual code.
 
@@ -248,7 +253,6 @@ void MultiFinger::TimerFunc(int id){
 		bool isGrasping = false;
 		static bool isGraspingPrev = false;
 		static double contactStartTime = 0.0f;
-		static int increaseMassState = IDLE;
 		for (int i = 0; i < phscene->NContacts(); i++) {
 			cp = phscene->GetContact(i);
 			if (cp->GetSocketSolid() == tool || cp->GetPlugSolid() == tool){
@@ -371,7 +375,7 @@ void MultiFinger::TimerFunc(int id){
 			contactStartTime = t;
 			//std::cout << "contact start time: " << contactStartTime << std::endl;
 		}	
-		else if ( properGraspForce && isGrasping || increaseMassState == FINISH) {
+		else if ( properGraspForce && isGrasping || increaseMassState >= INCREASE ) {
 			// Stable grasp or already started increasing, proceed to increase mass
 			contactDuration = t - contactStartTime;
 			//std::cout << "contact duration: " << contactDuration << std::endl;
@@ -391,7 +395,7 @@ void MultiFinger::TimerFunc(int id){
 		//MultiFingerStep(&spidarForce);  //This function computes the lineal and rotational couplings value
 		//spidar->SetForce(-spidarForce);  //This function set the force 
 		
-		if (!properGraspForce) {
+		if ((!properGraspForce) && increaseMassState <= WAIT) {
 			message = "Grasp Force Too STRONG. Please Decrease.";
 		}
 		else if (increaseMassState == IDLE) {
@@ -401,10 +405,10 @@ void MultiFinger::TimerFunc(int id){
 			message = "Hold the GRASP Steady.";
 		}
 		else if (increaseMassState == INCREASE) {
-			message = "The Object will be pushed. Please DON'T drop.";
+			message = "The Object Will Be Pushed by BLUE Object. Please DON'T Drop.";
 		}
 		else if (increaseMassState == FINISH) {
-			message = "Success.";
+			message = "Success. Please Release.";
 		}
 
 		PostRedisplay();
@@ -760,19 +764,21 @@ int MultiFinger::IncreaseMass(double t) {
 
 bool MultiFinger::IsGraspForceProper(double &f) {
 	// Check if the grasp force is not too large.
-	const double maxForce = 40.0f; // [N]
+	const double maxForce = 20.0f; // [N]
+	const double clipForce = 40.0f; // [N]
 	// flexiforce value to N conversion
 	const double flexiforce_to_N = grip.fingers[0].spring->GetSpring().x; //
 	const double offset = 0.03 + 0.007/2 - 0.05; // 0.03 : target object's half dimension, 0.007 : tool's radius, 0.05 : max length
 	const double force = flexiforce_to_N * (f / 6 + offset ); // 6 is spring length ratio
-	if (force < maxForce) {
-		fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::WHITE, target);
+	if (force < clipForce) {
+		//fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::WHITE, target);
 		return true;
 	}
 	else {
-		std::cout << "Excessive Grasp Force: " << force << " N" << std::endl;
-		f = 6 * (maxForce / flexiforce_to_N - offset);
-		fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::RED, target);
+		//std::cout << "Excessive Grasp Force: " << force << " N" << std::endl;
+		if(force > clipForce)
+			f = 6 * (clipForce / flexiforce_to_N - offset);
+		//fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::RED, target);
 		return false;
 	}
 	/* Calculate proper grasp force from mass and fricrtion parameters.
