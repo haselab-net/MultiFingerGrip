@@ -168,7 +168,7 @@ void MultiFinger::InitHapticInterface() {
 
 void MultiFinger::InitCameraView(){
 
-	Vec3d pos = Vec3d(0, 0.02, 0.2);
+	Vec3d pos = Vec3d(0, 0.05, 0.2);
 	GetCurrentWin()->GetTrackball()->SetPosition(pos);
 	Affinef af;
 	af.Pos() = pos;
