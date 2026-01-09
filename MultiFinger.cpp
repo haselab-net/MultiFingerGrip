@@ -27,6 +27,7 @@ MultiFinger::MultiFinger(){
 	message = "MultiFinger Grip using LuGre Friction Model.";
 	increaseMassState = IDLE;
 	trialNumber = 0;
+	offset = 0.5f;
 }
 
 //main function of the class
@@ -60,11 +61,12 @@ void MultiFinger::BuildScene(){
 	i = GetSdk()->NScene() - 1;
 	phscene = GetSdk()->GetScene(i)->GetPHScene();
 	phscene->SetTimeStep(pdt);
+	//phscene->SetNumIteration(50);
 
 	fwscene = GetSdk()->GetScene(i);
 	//fwscene->EnableRenderAxis(false, false, true);
-	fwscene->EnableRenderForce(false, false);
-	fwscene->EnableRenderContact(false);
+	//fwscene->EnableRenderForce(false, true);
+	//fwscene->EnableRenderContact(false);
 	GetSdk()->SetDebugMode(true);
 
 	grip.Build(fwscene);
@@ -87,6 +89,7 @@ void MultiFinger::BuildScene(){
 		0.0, 0.0, I));
 	//target->CompInertia();
 	std::cout << target->GetInertia() << std::endl;
+	//target->SetDynamical(false);
 	SetNext(true);
 	
 	// Push Object
@@ -184,6 +187,8 @@ void MultiFinger::InitCameraView(){
 //Calibrates the position of the grip and both pointers
 void MultiFinger::calibrate() {	
 	spidar->Calibration();
+	offset = flexiforce->Voltage();
+	DSTR << "Calibration done. Offset: " << offset << std::endl;
 }
 
 //This multimedia thread handles the haptic (6DOF virtual coupling pointers) and physics simulation (Springhead)
@@ -224,11 +229,11 @@ void MultiFinger::TimerFunc(int id){
 		double flexiforceValue = 0.0f;
 		static double flexiforce_p = 0.0f;
 		bool properGraspForce = false;
+		bool properHeight = target->GetFramePosition().y > 0.12;
 		if (flexiforce) {
 			// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
 			float volts = flexiforce->Voltage();
-			double offset = 0.3; // grabForce == 0 となる位置をずらす
-			const double a = 0.1;
+			const double a = 0.05;
 			flexiforceValue = a * (0.4*(volts - offset)) + (1.0 - a) * flexiforce_p;
 			flexiforce_p = flexiforceValue;
 			properGraspForce = IsGraspForceProper(flexiforceValue);
@@ -263,12 +268,12 @@ void MultiFinger::TimerFunc(int id){
 				cp->GetConstraintForce(cf, ct);
 				grabForce = cf[0]; // Normal force
 
-				isGrasping = properGraspForce;
+				isGrasping = properGraspForce && properHeight;
 
 				static bool prev_is_static = false;
 				Vec3d cv, cw;
 				cp->GetRelativeVelocity(cv, cw);
-				bool is_static = cv.norm() <= 2.0e-2;//cp->IsStaticFriction();
+				bool is_static = cv.norm() <= 5.0e-2;//cp->IsStaticFriction();
 				if (!is_static && prev_is_static) {
 					// Transition from static to dynamic friction
 					stickSlipTime.push_back(t);
@@ -298,13 +303,10 @@ void MultiFinger::TimerFunc(int id){
 						dT = 0.0f;
 					}
 					const double fa1 = 30.0f;
-					const double A1 = 0.6f;
-					dT = min(fabs(A1 * dT), 3.0f);
-					if (dT < 1.0f) {
-						dT = 0.0f;
-					}
+					const double A1 = 1000.0f;
+					double s = slip.norm();
 					//double slipd = min(A2 * slip.norm(), 3.0f);
-					vib = A1 * dT * sin(2.0f * M_PI * fa1 * t);// +A2 * slipd * sin(2.0f * M_PI * fa2 * t);
+					vib = min(A1* s, 1.0f)* sin(2.0f * M_PI * fa1 * t);// +A2 * slipd * sin(2.0f * M_PI * fa2 * t);
 					//std::cout << dT << "," << slipd << std::endl;
 					T_p = T;
 				}
@@ -342,7 +344,7 @@ void MultiFinger::TimerFunc(int id){
 				data.friction_force = Vec2d(cf[1], cf[2]).norm();
 				data.vibration_force = vib;
 				data.is_static_friction = cp->IsStaticFriction();
-				data.mass = target->GetMass();
+				//data.mass = target->GetMass();
 				logger->data = data;
 				logger->saveSample();
 
@@ -367,11 +369,11 @@ void MultiFinger::TimerFunc(int id){
 		}
 
 		double contactDuration = -1.0f;
-		if (!isGraspingPrev && isGrasping && increaseMassState < INCREASE ) {
+		if (!isGraspingPrev && isGrasping  && increaseMassState < RANDOM_WAIT ) {
 			contactStartTime = t;
 			//std::cout << "contact start time: " << contactStartTime << std::endl;
 		}	
-		else if ( properGraspForce && isGrasping || increaseMassState >= INCREASE ) {
+		else if ( properGraspForce && properHeight && isGrasping || increaseMassState >= RANDOM_WAIT ) {
 			// Stable grasp or already started increasing, proceed to increase mass
 			contactDuration = t - contactStartTime;
 			//std::cout << "contact duration: " << contactDuration << std::endl;
@@ -379,7 +381,7 @@ void MultiFinger::TimerFunc(int id){
 		increaseMassState = IncreaseMass(contactDuration);
 		isGraspingPrev = isGrasping;
 
-		double fs = 0.3f, ts = 0.5;
+		double fs = 0.4f, ts = 0.5;
 		if(!bForceFeedback)
 			totalForce = Vec3d::Zero();
 		if (bVibrationFeedback)
@@ -390,11 +392,14 @@ void MultiFinger::TimerFunc(int id){
 		//MultiFingerStep(&spidarForce);  //This function computes the lineal and rotational couplings value
 		//spidar->SetForce(-spidarForce);  //This function set the force 
 		
-		if ((!properGraspForce) && increaseMassState <= WAIT) {
+		if (!properGraspForce && increaseMassState <= WAIT) {
 			message = "Grasp force too STRONG. Please Loosen Grip.";
 		}
+		else if (!properHeight && increaseMassState == WAIT) {
+			message = "Object too LOW. Please Raise Up.";
+		}
 		else if (increaseMassState == IDLE) {
-			message = "Please GRASP the Object.";
+			message = "Please GRASP UP the Object.";
 		}
 		else if (increaseMassState == WAIT) {
 			message = "Please Hold STEADY.";
@@ -659,7 +664,7 @@ void MultiFinger::resetObjects(){
 	Posed ptmp;
 	target->SetVelocity(Vec3d());
 	qq.FromEuler(Vec3f(Radf(0.0f), Radf(180.0f), 0.0f));
-	ptmp = Posed(Vec3d(0.0f, 0.7f, 0.0f), qq);
+	ptmp = Posed(Vec3d(0.0f, 0.1f, 0.0f), qq);
 	target->SetPose(ptmp);
 	/*
 	int randAngle;
@@ -710,7 +715,7 @@ void MultiFinger::IdleFunc() {
 int MultiFinger::IncreaseMass(double t) {
 	const double StartTime = 1.0; // [s]
 	static double randomWaitTime = 0.0; // [s]
-	const double Duration = 2.0; // [s]
+	const double Duration = 5.0; // [s]
 	const double m0 = logger->condition.mass0;
 	const double dmdt = logger->condition.dmdt;
 
@@ -742,30 +747,38 @@ int MultiFinger::IncreaseMass(double t) {
 		}
 		else if (state == WAIT && t > StartTime)
 			state = RANDOM_WAIT;
-		// Move Push Object to contact position
-		if (pushHeight > targetHeight + offset)
-			pushObject->SetVelocity(Vec3d(0.0, -v, 0.0));
-		else if (pushHeight < targetHeight + offset)
-			pushObject->SetVelocity(Vec3d(0.0, +v, 0.0));
-		else {
+		if (state == RANDOM_WAIT) {
+			// Move Push Object to contact position
+			if (pushHeight > targetHeight + offset)
+				pushObject->SetVelocity(Vec3d(0.0, -v, 0.0));
+			else if (pushHeight < targetHeight + offset)
+				pushObject->SetVelocity(Vec3d(0.0, +v, 0.0));
+			else {
 
+			}
 		}
 	}
 	else if (t < StartTime + randomWaitTime + Duration) {
 		if (state != INCREASE) {
-			std::cout << "[" << t << "]" << "Start Increasing Mass.Inital :" << m0 <<  std::endl;
+			std::cout << "[" << t << "]" << "Start Pushing Down"  <<  std::endl;
 			state = INCREASE;
 		}
-		const double newMass = m0 +  dmdt * (t - StartTime);
+		const double pushForce = dmdt * (t - StartTime - randomWaitTime);
 		pushObject->SetVelocity(Vec3d(0.0, 0.0, 0.0));
 		pushObject->SetCenterPosition(Vec3d(0.0, targetHeight + offset, 0.0));
-		target->SetMass(newMass);
+		//target->SetMass(newMass);
+		target->AddForce(Vec3d(0.0, -pushForce, 0.0));
+		logger->data.mass = pushForce;
 	}
 	else {
 		if (state == INCREASE) {
 			std::cout << "End Increasing Mass" << std::endl;
-			std::cout << "Final Mass: " << target->GetMass() << std::endl;
+			std::cout << "Final Push Force: " << dmdt * (t - StartTime - randomWaitTime) << std::endl;
 			state = FINISH;
+			pushObject->SetVelocity(Vec3d(0.0, 0.0, 0.0));
+			pushObject->SetCenterPosition(Vec3d(0.0, targetHeight + offset, 0.0));
+		}
+		else if (state == FINISH) {
 			pushObject->SetVelocity(Vec3d(0.0, 0.0, 0.0));
 			pushObject->SetCenterPosition(Vec3d(0.0, targetHeight + offset, 0.0));
 		}
@@ -776,7 +789,7 @@ int MultiFinger::IncreaseMass(double t) {
 
 bool MultiFinger::IsGraspForceProper(double &f) {
 	// Check if the grasp force is not too large.
-	const double maxForce = 11.0f; // [N]
+	const double maxForce = 6.0f; // [N]
 	const double clipForce = 40.0f; // [N]
 	// flexiforce value to N conversion
 	const double flexiforce_to_N = grip.fingers[0].spring->GetSpring().x; //

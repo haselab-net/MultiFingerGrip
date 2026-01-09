@@ -48,6 +48,7 @@ public: //Local Properties
 	GRLightDesc ld;    //lights used to draw letters and the force grap in the screen
 	PHSolidIf* target;
 	std::vector<float> stickSlipTime;
+	std::vector<float> partialSlipTime;
 
 	UTRef<UTTimerIf> ptimer;
 	int pTimerID;
@@ -57,6 +58,8 @@ public: //Local Properties
 	int nsolids;
 	double posScale;  //2.5 orignal value with 20x30 floor scene (Virgilio original)
 	int grabKey;	//	'1' to '9'
+
+	double offset; // grabForce == 0 ‚Æ‚È‚éˆÊ’u‚ð‚¸‚ç‚·
 
 	bool bForceFeedback = false;
 	bool bVibrationFeedback = true;

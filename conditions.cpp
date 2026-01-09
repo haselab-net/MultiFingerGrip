@@ -3,36 +3,38 @@
 
 using namespace Spr;
 
+#define DMDT 2.0f  // N/s
+
 Condition conditions[CONDITION_COUNT] = {
     // COULOMB_100G
     Condition(
         FrictionModel::COULOMB,
         0.9, 0.8,
         0.100,      // 100g
-        2.0 / 9.8
+        DMDT
     ),
     // COULOMB_150G
     Condition(
         FrictionModel::COULOMB,
         0.9, 0.8,
         0.150,      // 150g
-        2.0 / 9.8
+        DMDT
     ),
     // LUGRE_100G
     Condition(
         FrictionModel::LUGRE,
-        1000.0, 0.00, 1.0,
-        0.8, 0.1, 0.001,
+        1000.0, 30.00, 1.0,
+        0.8, 0.1, 0.01,
         0.100,      // 100g
-        2.0 / 9.8
+        DMDT
     ),
     // LUGRE_150G
     Condition(
         FrictionModel::LUGRE,
-        1000.0, 0.00, 1.0,
-        0.8, 0.1, 0.001,
+        1000.0, 30.00, 1.0,
+        0.8, 0.1, 0.01,
         0.150,      // 150g
-        2.0 / 9.8
+        DMDT
     )
 }; 
 

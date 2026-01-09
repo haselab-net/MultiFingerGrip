@@ -31,7 +31,7 @@ typedef struct Condition {
 
     // Coulomb
     Condition(unsigned int model, double mu0, double mu, double m, double dmdt)
-        : friction_model(model), mass0(m), dmdt(2.0/9.8)
+        : friction_model(model), mass0(m), dmdt(dmdt)
     {
         lugre = {};
         coulomb = { mu0, mu };
@@ -42,7 +42,7 @@ typedef struct Condition {
         double s0, double s1, double s2,
         double A_, double B_, double C_,
         double m, double  dmdt)
-		: friction_model(model), mass0(m), dmdt(2.0 / 9.8)
+		: friction_model(model), mass0(m), dmdt(dmdt)
     {
         lugre = { s0, s1, s2, A_, B_, C_ };
     }
