@@ -37,7 +37,7 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	sh->SetDensity(0.00016 / sh->CalcVolume());
 	tool->RemoveShape(0);
 	tool->AddShape(sh);
-	
+	tool->SetMass(0.25f);	
 	tool->SetGravity(false);
 	tool->SetFramePosition(gripDevice->GetPose() * (position + length*direction));
 	
