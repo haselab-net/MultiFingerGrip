@@ -18,7 +18,7 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	PHSceneIf* phScene = fwScene->GetPHScene();
 	ostringstream toolName;
 	toolName << "soTool" << index;
-	tool = phScene->FindObject(toolName.str().c_str())->Cast();
+	//tool = phScene->FindObject(toolName.str().c_str())->Cast();
 	
 	CDSphereDesc shapeDesc;
 	shapeDesc.radius = 0.005f;
@@ -32,7 +32,7 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	shapeDesc.material.timeVaryFrictionB = .7;
 	shapeDesc.material.timeVaryFrictionC = 400.0;
 	//shapeDesc.material.frictionModel = FrictionModel::COULOMB;
-	//tool = fwScene->GetPHScene()->CreateSolid();
+	tool = fwScene->GetPHScene()->CreateSolid();
 	CDShapeIf* sh = fwScene->GetSdk()->GetPHSdk()->CreateShape(shapeDesc);
 	sh->SetDensity(0.00016 / sh->CalcVolume());
 	tool->RemoveShape(0);

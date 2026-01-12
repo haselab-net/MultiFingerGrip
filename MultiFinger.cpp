@@ -13,14 +13,10 @@
 
 //Constructor 
 MultiFinger::MultiFinger(){
-
 	humanInterface = SPIDAR;
-	fileName = "./sprfiles/scene.spr";
+
 	pdt = 0.001f;
 	posScale = 10.0;  //2.5 orignal value with 20x30 floor scene (Virgilio original) (for peta pointer)  10.0 
-
-	//Inits the debug CSV file
-	//this->myfile.open("c:\\tmp\\loco.csv");
 
 	displayGraphFlag = false;
 	logger = new Logger("Exp" + std::to_string(USER_NUM));
@@ -51,12 +47,10 @@ void MultiFinger::Init(int argc, char* argv[]){
 	count = 0;
 	delay = 0;
 }
-//This function loads the spr file and inits the scene
+
+
 void MultiFinger::BuildScene(){
-	
 	int i = 0;
-	UTRef<ImportIf> import = GetSdk()->GetFISdk()->CreateImport();	/// インポートポイントの作成
-	GetSdk()->LoadScene(fileName, import);	/// ファイルのロード
 
 	i = GetSdk()->NScene() - 1;
 	phscene = GetSdk()->GetScene(i)->GetPHScene();
@@ -68,29 +62,35 @@ void MultiFinger::BuildScene(){
 	//fwscene->EnableRenderForce(false, true);
 	//fwscene->EnableRenderContact(false);
 	GetSdk()->SetDebugMode(true);
-
-	grip.Build(fwscene);
-	maxReach = 0.05;
-	this->nsolids = phscene->NSolids();
-	DSTR << "Nsolids: " << nsolids << std::endl;  //DEBUG
-	PHSolidIf **solidspnt = phscene->GetSolids();
 	
 	phscene->SetGravity(Vec3d(0.0, -9.8, 0.0));
 
-	PHSolidIf *floor = phscene->FindObject("soCube")->Cast();
-	floor->GetShape(0)->SetStaticFriction(0.4f);
+	// Floor
+	PHSolidIf* floor = phscene->CreateSolid();
+	CDBoxDesc bd;
+	bd.boxsize = Vec3d(1.0, 0.025, 0.50);
+	CDShapeIf* sh = GetSdk()->GetPHSdk()->CreateShape(bd);
+	PHMaterial mat;
+	mat.frictionModel = FrictionModel::COULOMB;
+	mat.mu = 0.8f;	mat.mu0 = 0.6f;
+	sh->SetMaterial(mat);
+	floor->AddShape(sh);
+	floor->SetFramePosition(Vec3d(0.0, -0.025, 0.0));
+	floor->SetDynamical(false);
 
-	target = phscene->FindObject("soAluminioLight")->Cast();
-	std::cout << target->GetInertia() << std::endl;
+	// Target Object
+	target = phscene->CreateSolid();
+	bd.boxsize = Vec3d(0.06, 0.12, 0.06);
+	sh = GetSdk()->GetPHSdk()->CreateShape(bd);
+	sh->SetMaterial(mat);
+	target->AddShape(sh);
+	target->SetFramePosition(Vec3d(0.0, 0.07, 0.0));
 	const double I = 1.0e6;
 	target->SetInertia(Matrix3d(
 		I, 0.0, 0.0, 
 		0.0, I, 0.0,
 		0.0, 0.0, I));
 	//target->CompInertia();
-	std::cout << target->GetInertia() << std::endl;
-	//target->SetDynamical(false);
-	SetNext(true);
 	
 	// Push Object
 	CDCapsuleDesc capDesc;
@@ -105,6 +105,13 @@ void MultiFinger::BuildScene(){
 	pushObject->SetDynamical(false);
 	fwscene->GetPHScene()->SetContactMode(pushObject, PHSceneDesc::MODE_NONE);
 	fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::DODGERBLUE, pushObject);
+
+	// Finger Grip
+	grip.Build(fwscene);
+	maxReach = 0.05;
+	this->nsolids = phscene->NSolids();
+
+	SetNext(true);
 }
 
 //Inits SPIDAR and calibrates the pointer position
