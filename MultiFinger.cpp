@@ -24,6 +24,7 @@ MultiFinger::MultiFinger(){
 	increaseMassState = IDLE;
 	trialNumber = 0;
 	offset = 0.5f;
+	inContact = false;
 }
 
 //main function of the class
@@ -92,16 +93,6 @@ void MultiFinger::BuildScene(){
 		0.0, 0.0, I));
 	//target->CompInertia();
 
-	// Target Guide
-	PHSolidIf* targetGuilde = phscene->CreateSolid();
-	bd.boxsize = Vec3d(0.061, 0.02, 0.061);
-	sh = GetSdk()->GetPHSdk()->CreateShape(bd);
-	targetGuilde->AddShape(sh);
-	targetGuilde->SetMass(0.0f);
-	targetGuilde->SetFramePosition(Vec3d(0.0, 0.022, 0.0));
-	targetGuilde->SetDynamical(false);
-	fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::LIGHTPINK, targetGuilde);
-
 	// Push Object
 	CDCapsuleDesc capDesc;
 	capDesc.radius = 0.01;
@@ -121,7 +112,6 @@ void MultiFinger::BuildScene(){
 	this->nsolids = phscene->NSolids();
 
 	fwscene->GetPHScene()->SetContactMode(pushObject, PHSceneDesc::MODE_NONE);
-	fwscene->GetPHScene()->SetContactMode(targetGuilde, PHSceneDesc::MODE_NONE);
 
 	SetNext(true);
 }
@@ -212,7 +202,6 @@ void MultiFinger::calibrate() {
 
 //This multimedia thread handles the haptic (6DOF virtual coupling pointers) and physics simulation (Springhead)
 void MultiFinger::TimerFunc(int id){
-	
 	//DSTR << "timers id: " << pTimerID << std::endl;
 	if (pTimerID == id){
 		// Count "Cycle Per Second"
@@ -232,6 +221,7 @@ void MultiFinger::TimerFunc(int id){
 			cycle++;
 		}
 		UTAutoLock LOCK(displayLock);
+		inContact = false;
 
 		phscene->Step();  //springhead physics step
 		double a_vib = 0.0f;
@@ -282,7 +272,9 @@ void MultiFinger::TimerFunc(int id){
 		static double contactStartTime = 0.0f;
 		for (int i = 0; i < phscene->NContacts(); i++) {
 			cp = phscene->GetContact(i);
-			if (cp->GetSocketSolid() == tool || cp->GetPlugSolid() == tool){
+			if ((cp->GetSocketSolid() == tool || cp->GetPlugSolid() == tool) 
+				&&(cp->GetSocketSolid() == target || cp->GetPlugSolid() == target)){
+				inContact = true;
 				Vec3d cf, ct;
 				cp->GetConstraintForce(cf, ct);
 				grabForce = cf[0]; // Normal force
@@ -388,6 +380,9 @@ void MultiFinger::TimerFunc(int id){
 		}
 
 		double contactDuration = -1.0f;
+		if (increaseMassState == RANDOM_WAIT && !inContact) {
+			increaseMassState = IDLE;
+		}
 		if (!isGraspingPrev && isGrasping  && increaseMassState < RANDOM_WAIT ) {
 			contactStartTime = t;
 			//std::cout << "contact start time: " << contactStartTime << std::endl;
@@ -418,7 +413,7 @@ void MultiFinger::TimerFunc(int id){
 			message = "Object too LOW. Please Raise Up.";
 		}
 		else if (increaseMassState == IDLE) {
-			message = "Please GRASP UP the Object.";
+			message = "Please Lift Up the Object.";
 		}
 		else if (increaseMassState == WAIT) {
 			message = "Please Hold STEADY.";
@@ -637,6 +632,7 @@ void MultiFinger::Display()
 		render->SetViewMatrix(
 			GetCurrentWin()->GetTrackball()->GetAffine().inv());
 	}
+	scene->Draw(render, true);
 	render->PushLight(ld);
 	render->PushModelMatrix();
 
@@ -657,11 +653,26 @@ void MultiFinger::Display()
 	else
 		render->DrawFont(Vec2f(1000, 150), "Trial: " + std::to_string(trialNumber) + " / " + std::to_string(20));
 	render->LeaveScreenCoordinate();
+
+	// Guide
+	const float left_pos = -0.06f;
+	const float right_pos = 0.04f;
+	const float pinch_pos = -0.01f;
+	const float lift_pos = 0.12f;
+	const double target_y = target->GetFramePosition().y;
+	if (target_y < 0.08 && !inContact && increaseMassState <= WAIT) {
+		render->DrawFont(Vec3f(left_pos, pinch_pos, 0.0), "->");
+		render->DrawFont(Vec3f(right_pos, pinch_pos, 0.0), "<- Pintch Here ");
+	}
+	else if(inContact && increaseMassState <= WAIT){
+		render->DrawFont(Vec3f(left_pos, lift_pos, 0.0), "->");
+		render->DrawFont(Vec3f(right_pos, lift_pos, 0.0), "<- Lift to Here");
+	}
+
 	render->SetLighting(true);
 	render->SetDepthTest(true);
 	render->PopModelMatrix();
 	render->PopLight();
-	scene->Draw(render, true);
 	render->EndScene();
 	render->SwapBuffers();
 

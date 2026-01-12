@@ -84,6 +84,8 @@ public: //Local Properties
 		FINISH
 	};
 	int increaseMassState;
+
+	bool inContact;
 	int trialNumber;
 	bool practiceTrial;
 	int IncreaseMass(double t);
