@@ -25,6 +25,7 @@ MultiFinger::MultiFinger(){
 	trialNumber = 0;
 	offset = 0.5f;
 	inContact = false;
+	currentPushForce = 0.0f;
 }
 
 //main function of the class
@@ -355,7 +356,7 @@ void MultiFinger::TimerFunc(int id){
 				data.friction_force = Vec2d(cf[1], cf[2]).norm();
 				data.vibration_force = vib;
 				data.is_static_friction = cp->IsStaticFriction();
-				//data.mass = target->GetMass();
+				data.mass = currentPushForce;
 				logger->data = data;
 				logger->saveSample();
 
@@ -755,6 +756,7 @@ int MultiFinger::IncreaseMass(double t) {
 	const double offset = 0.1/ 2 + 0.01;
 	const double startHeight = 0.3 + offset;
 	const double v = 0.1;
+	currentPushForce = 0.0f;
 	if (t < 0.0f) {
 		if (state != IDLE) {
 			std::cout << "Reset Increase Mass State" << std::endl;
@@ -793,12 +795,11 @@ int MultiFinger::IncreaseMass(double t) {
 			std::cout << "[" << t << "]" << "Start Pushing Down"  <<  std::endl;
 			state = INCREASE;
 		}
-		const double pushForce = dmdt * (t - StartTime - randomWaitTime);
+		currentPushForce = dmdt * (t - StartTime - randomWaitTime);
 		pushObject->SetVelocity(Vec3d(0.0, 0.0, 0.0));
 		pushObject->SetCenterPosition(Vec3d(0.0, targetHeight + offset, 0.0));
 		//target->SetMass(newMass);
-		target->AddForce(Vec3d(0.0, -pushForce, 0.0));
-		logger->data.mass = pushForce;
+		target->AddForce(Vec3d(0.0, -currentPushForce, 0.0));
 	}
 	else {
 		if (state == INCREASE) {

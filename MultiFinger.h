@@ -89,6 +89,7 @@ public: //Local Properties
 	int trialNumber;
 	bool practiceTrial;
 	int IncreaseMass(double t);
+	double currentPushForce;
 	bool IsGraspForceProper(double &f);
 	std::string message;
 
