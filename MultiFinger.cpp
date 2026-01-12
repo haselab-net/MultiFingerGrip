@@ -9,7 +9,7 @@
 #include "Logger.hpp"
 
 
-#define USER_NUM 15
+#define USER_NUM 9
 
 //Constructor 
 MultiFinger::MultiFinger(){
@@ -455,6 +455,10 @@ void MultiFinger::Keyboard(int key, int x, int y){
 			SetNext(false);
 		}
 		break;
+	case '0':
+		SetNext(false);
+		break;
+		
 	case 'p':
 		SetNext(true);
 		break;
@@ -651,8 +655,10 @@ void MultiFinger::Display()
 	render->DrawFont(Vec2f(1000, 100), "Force Feedback : " + withForce);
 	if (practiceTrial)
 		render->DrawFont(Vec2f(1000, 150), "Practice Trial");
+	else if(trialNumber < 41)
+		render->DrawFont(Vec2f(1000, 150), "Trial: " + std::to_string(trialNumber) + " / " + std::to_string(40));
 	else
-		render->DrawFont(Vec2f(1000, 150), "Trial: " + std::to_string(trialNumber) + " / " + std::to_string(20));
+		render->DrawFont(Vec2f(1000, 150), "Finished. Thank you!");
 	render->LeaveScreenCoordinate();
 
 	// Guide
@@ -878,7 +884,7 @@ void MultiFinger::SetNext(bool practice) {
 	}
 	else {
 		bForceFeedback = trialNumber < SEQ_NUM;
-		int u = (USER_NUM + int(trialNumber / SEQ_NUM)) % 8;
+		int u = (USER_NUM + int(trialNumber / SEQ_NUM)) % 16;
 		int s = trialNumber % SEQ_NUM;
 		c = conditions[ seq[u][s] ];
 		std::cout << "Trial " << trialNumber << ": Condition " << seq[u][s] << "ForceFeedback :" << bForceFeedback << std::endl;
