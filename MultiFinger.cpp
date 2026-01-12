@@ -91,7 +91,17 @@ void MultiFinger::BuildScene(){
 		0.0, I, 0.0,
 		0.0, 0.0, I));
 	//target->CompInertia();
-	
+
+	// Target Guide
+	PHSolidIf* targetGuilde = phscene->CreateSolid();
+	bd.boxsize = Vec3d(0.061, 0.02, 0.061);
+	sh = GetSdk()->GetPHSdk()->CreateShape(bd);
+	targetGuilde->AddShape(sh);
+	targetGuilde->SetMass(0.0f);
+	targetGuilde->SetFramePosition(Vec3d(0.0, 0.022, 0.0));
+	targetGuilde->SetDynamical(false);
+	fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::LIGHTPINK, targetGuilde);
+
 	// Push Object
 	CDCapsuleDesc capDesc;
 	capDesc.radius = 0.01;
@@ -103,13 +113,15 @@ void MultiFinger::BuildScene(){
 	pushObject->SetFramePosition(Vec3d(0.0, 0.3, 0.0));
 	pushObject->SetOrientation(Quaterniond().Rot(M_PI / 2.0, 'x'));
 	pushObject->SetDynamical(false);
-	fwscene->GetPHScene()->SetContactMode(pushObject, PHSceneDesc::MODE_NONE);
 	fwscene->SetSolidMaterial(GRRenderIf::TMaterialSample::DODGERBLUE, pushObject);
 
 	// Finger Grip
 	grip.Build(fwscene);
 	maxReach = 0.05;
 	this->nsolids = phscene->NSolids();
+
+	fwscene->GetPHScene()->SetContactMode(pushObject, PHSceneDesc::MODE_NONE);
+	fwscene->GetPHScene()->SetContactMode(targetGuilde, PHSceneDesc::MODE_NONE);
 
 	SetNext(true);
 }
@@ -388,7 +400,7 @@ void MultiFinger::TimerFunc(int id){
 		increaseMassState = IncreaseMass(contactDuration);
 		isGraspingPrev = isGrasping;
 
-		double fs = 0.4f, ts = 0.5;
+		double fs = 0.3f, ts = 0.5;
 		if(!bForceFeedback)
 			totalForce = Vec3d::Zero();
 		if (bVibrationFeedback)

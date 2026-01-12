@@ -40,7 +40,7 @@ void Finger::Build(FWSceneIf* fwScene, PHSolidIf* gripDevice) {
 	
 	tool->SetGravity(false);
 	tool->SetFramePosition(gripDevice->GetPose() * (position + length*direction));
-
+	
 	deviceOrientation.RotationArc(Vec3d(1, 0, 0), direction);
 	PHSpringDesc sprDesc;
 	sprDesc.poseSocket.Ori() = deviceOrientation;
