@@ -9,7 +9,7 @@
 #include "Logger.hpp"
 
 
-#define USER_NUM 9
+#define USER_NUM 15
 
 //Constructor 
 MultiFinger::MultiFinger(){
@@ -26,6 +26,7 @@ MultiFinger::MultiFinger(){
 	offset = 0.5f;
 	inContact = false;
 	currentPushForce = 0.0f;
+	dof6 = false;
 }
 
 //main function of the class
@@ -75,6 +76,7 @@ void MultiFinger::BuildScene(){
 	PHMaterial mat;
 	mat.frictionModel = FrictionModel::COULOMB;
 	mat.mu = 0.8f;	mat.mu0 = 0.6f;
+	//mat.spring = 1.0e4f;	mat.damper = 1.0e1f;
 	sh->SetMaterial(mat);
 	floor->AddShape(sh);
 	floor->SetFramePosition(Vec3d(0.0, -0.025, 0.0));
@@ -229,10 +231,12 @@ void MultiFinger::TimerFunc(int id){
 		Posed pose = spidar->GetPose();
 		pose.Pos() = pose.Pos()*4;
 		pose.PosY() += 0.07;
-		// Disable XZ movement and rotation
-		pose.PosX() = 0.0f;
-		pose.PosZ() = 0.0f;
-		pose.Ori() = Quaterniond(1, 0, 0, 0);
+		if (!dof6) {
+			// Disable XZ movement and rotation
+			pose.PosX() = 0.0f;
+			pose.PosZ() = 0.0f;
+			pose.Ori() = Quaterniond(1, 0, 0, 0);
+		}
 
 		static int c = 0;
 		c++;
@@ -355,7 +359,7 @@ void MultiFinger::TimerFunc(int id){
 				data.lugre_z[1] = cp->GetLuGreZ()[1];
 				data.friction_force = Vec2d(cf[1], cf[2]).norm();
 				data.vibration_force = vib;
-				data.is_static_friction = cp->IsStaticFriction();
+				data.is_static_friction = is_static;
 				data.mass = currentPushForce;
 				logger->data = data;
 				logger->saveSample();
@@ -401,8 +405,10 @@ void MultiFinger::TimerFunc(int id){
 			totalForce = Vec3d::Zero();
 		if (bVibrationFeedback)
 			totalForce.y += vib;
-		spidar->SetForce(-fs * totalForce, Vec3f());	
-
+		if(!dof6)
+			spidar->SetForce(-fs * totalForce, Vec3f());	
+		else
+			spidar->SetForce(-fs * totalForce, -ts * totalTorque);
 		spidar->Update(pdt);  //updates the forces displayed in SPIDAR
 		//MultiFingerStep(&spidarForce);  //This function computes the lineal and rotational couplings value
 		//spidar->SetForce(-spidarForce);  //This function set the force 
@@ -498,13 +504,6 @@ void MultiFinger::Keyboard(int key, int x, int y){
 		this->resetObjects();
 	}
 			break;
-	case '1': case '2': case '3': case '4': case '5': case '6':
-	case '7': case '8': case '9':
-		grabKey = key;
-
-		break;
-
-		//NUM KEYS BLOCK
 	case 356: // left
 	{
 		pose.PosX() -= d;
@@ -560,6 +559,20 @@ void MultiFinger::Keyboard(int key, int x, int y){
 		else
 		{
 			DSTR << "OFF\n";
+		}
+		break;
+	case '6':
+		dof6 = !dof6;
+		DSTR << "6DOF Force Feedback: ";
+		if (dof6)
+		{
+			DSTR << "ON\n";
+			target->CompInertia();
+		}
+		else
+		{
+			DSTR << "OFF\n";
+			target->SetInertia(Matrix3d::Diag(1.0e6, 1.0e6, 1.0e6));
 		}
 		break;
 	case 't':

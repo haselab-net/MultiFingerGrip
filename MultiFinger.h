@@ -93,6 +93,7 @@ public: //Local Properties
 	bool IsGraspForceProper(double &f);
 	std::string message;
 
+	bool dof6;
 
 	//phsolid objects assigned during buildscene()
 	PHSolidIf *fPhone;
