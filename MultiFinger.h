@@ -58,7 +58,7 @@ public: //Local Properties
 	int nsolids;
 	double posScale;  //2.5 orignal value with 20x30 floor scene (Virgilio original)
 	int grabKey;	//	'1' to '9'
-
+	bool set_force_manual;
 	double offset; // grabForce == 0 ‚Æ‚È‚éˆÊ’u‚ð‚¸‚ç‚·
 
 	bool bForceFeedback = false;

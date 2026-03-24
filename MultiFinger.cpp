@@ -9,7 +9,7 @@
 #include "Logger.hpp"
 
 
-#define USER_NUM 15
+#define USER_NUM 3
 
 //Constructor 
 MultiFinger::MultiFinger(){
@@ -27,6 +27,7 @@ MultiFinger::MultiFinger(){
 	inContact = false;
 	currentPushForce = 0.0f;
 	dof6 = false;
+	set_force_manual = false;
 }
 
 //main function of the class
@@ -247,7 +248,7 @@ void MultiFinger::TimerFunc(int id){
 		if (flexiforce) {
 			// bad calibration! m = -1.5716   b = 2.7717  //  -2.4914    4.6105
 			float volts = flexiforce->Voltage();
-			const double a = 0.05;
+			const double a = 0.01;
 			flexiforceValue = a * (0.4*(volts - offset)) + (1.0 - a) * flexiforce_p;
 			flexiforce_p = flexiforceValue;
 			properGraspForce = IsGraspForceProper(flexiforceValue);
@@ -289,7 +290,7 @@ void MultiFinger::TimerFunc(int id){
 				static bool prev_is_static = false;
 				Vec3d cv, cw;
 				cp->GetRelativeVelocity(cv, cw);
-				bool is_static = cv.norm() <= 5.0e-2;//cp->IsStaticFriction();
+				bool is_static = cv.norm() <= 2.0e-2;//cp->IsStaticFriction();
 				if (!is_static && prev_is_static) {
 					// Transition from static to dynamic friction
 					stickSlipTime.push_back(t);
@@ -405,10 +406,13 @@ void MultiFinger::TimerFunc(int id){
 			totalForce = Vec3d::Zero();
 		if (bVibrationFeedback)
 			totalForce.y += vib;
-		if(!dof6)
+		if (set_force_manual)
+			spidar->SetForce(Vec3d(-8.0*0.707f, 0.0f, 8.0*0.707f), Vec3d::Zero());
+		else if(!dof6)
 			spidar->SetForce(-fs * totalForce, Vec3f());	
 		else
 			spidar->SetForce(-fs * totalForce, -ts * totalTorque);
+		
 		spidar->Update(pdt);  //updates the forces displayed in SPIDAR
 		//MultiFingerStep(&spidarForce);  //This function computes the lineal and rotational couplings value
 		//spidar->SetForce(-spidarForce);  //This function set the force 
@@ -536,6 +540,10 @@ void MultiFinger::Keyboard(int key, int x, int y){
 		break;
 	case DVKeyCode::PAGE_DOWN:
 		pose.PosZ() += d;
+		break;
+	case 'a':
+		set_force_manual = !set_force_manual;
+		std::cout << "Manual Set Force : " << set_force_manual << std::endl;
 		break;
 	case 'f':
 		bForceFeedback = !bForceFeedback;

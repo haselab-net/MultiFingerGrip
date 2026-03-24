@@ -5,6 +5,7 @@ using namespace Spr;
 
 #define DMDT 2.0f  // N/s
 
+#if 0
 Condition conditions[CONDITION_COUNT] = {
     // COULOMB_100G
     Condition(
@@ -37,7 +38,44 @@ Condition conditions[CONDITION_COUNT] = {
         DMDT
     )
 }; 
+#else
+Condition conditions[CONDITION_COUNT] = {
+    // LUGRE_100G
+    Condition(
+        FrictionModel::LUGRE,
+        1000.0, 30.00, 1.0,
+        0.8, 0.1, 0.01,
+        0.100,      // 100g
+        DMDT
+    ),
+    // LUGRE_150G
+    Condition(
+        FrictionModel::LUGRE,
+        1000.0, 30.00, 1.0,
+        0.8, 0.1, 0.01,
+        0.150,      // 150g
+        DMDT
+    ),
+    // LUGRE_100G
+    Condition(
+        FrictionModel::LUGRE_TV,
+        1000.0, 30.00, 1.0,
+        0.8, 0.01, 400.0,
+        0.100,      // 100g
+        DMDT
+    ),
+    // LUGRE_150G
+    Condition(
+        FrictionModel::LUGRE_TV,
+        1000.0, 30.00, 1.0,
+        0.8, 0.01, 400.0,
+        0.150,      // 150g
+        DMDT
+    )
+};
 
+
+#endif
 int seq[16][20] = {
     // --- Group 1 
     {2,0,3,1,  1,3,0,2,  0,2,1,3,  3,1,2,0,  1,0,3,2}, // ID 0
